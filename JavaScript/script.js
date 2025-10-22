@@ -1,68 +1,70 @@
-// Lista de torneos con sus jugadores inscritos
-const tournaments = [
-    { id: 1, name: 'Tekken 7', players: [] },
-    { id: 2, name: 'Tekken Tag Tournament', players: [] },
-    { id: 3, name: 'Tekken 3', players: [] },
-];
+// Registro de usuarios
+document.addEventListener("DOMContentLoaded", () => {
+  const users = JSON.parse(localStorage.getItem("users")) || [];
+  const tournaments = JSON.parse(localStorage.getItem("tournaments")) || [];
 
-// Función para mostrar los torneos disponibles
-function displayTournaments() {
-    const tournamentList = document.getElementById('tournament-list');
-
-    tournamentList.innerHTML = '';
-    tournaments.forEach(tournament => {
-        const tournamentDiv = document.createElement('div');
-        tournamentDiv.textContent = tournament.name;
-        
-        const playerList = document.createElement('ul');
-        if (tournament.players.length > 0) {
-            tournament.players.forEach(player => {
-                const playerItem = document.createElement('li');
-                playerItem.textContent = player;
-                playerList.appendChild(playerItem);
-            });
-        } else {
-            const noPlayers = document.createElement('p');
-            noPlayers.textContent = 'No hay jugadores inscritos aún.';
-            tournamentDiv.appendChild(noPlayers);
-        }
-
-        tournamentDiv.appendChild(playerList);
-        tournamentList.appendChild(tournamentDiv);
+  // Registro
+  const registerForm = document.getElementById("register-form");
+  if (registerForm) {
+    registerForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const user = document.getElementById("reg-user").value;
+      const pass = document.getElementById("reg-pass").value;
+      if (users.find(u => u.user === user)) {
+        alert("Ese usuario ya existe.");
+        return;
+      }
+      users.push({ user, pass });
+      localStorage.setItem("users", JSON.stringify(users));
+      alert("Registro exitoso. ¡Ahora inicia sesión!");
+      window.location.href = "login.html";
     });
-}
+  }
 
-// Función para registrar un jugador
-document.getElementById('register-form').addEventListener('submit', function(event) {
-    event.preventDefault();
-    const playerName = document.getElementById('player-name').value;
-    if (playerName === '') {
-        alert('Por favor, ingresa un nombre de usuario.');
-        return;
+  // Login
+  const loginForm = document.getElementById("login-form");
+  if (loginForm) {
+    loginForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const user = document.getElementById("login-user").value;
+      const pass = document.getElementById("login-pass").value;
+      const validUser = users.find(u => u.user === user && u.pass === pass);
+      if (validUser) {
+        localStorage.setItem("loggedUser", user);
+        alert(`Bienvenido, ${user}!`);
+        window.location.href = "tournaments.html";
+      } else {
+        alert("Usuario o contraseña incorrectos.");
+      }
+    });
+  }
+
+  // Crear Torneo
+  const createForm = document.getElementById("create-tournament-form");
+  if (createForm) {
+    createForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const name = document.getElementById("tournament-name").value;
+      tournaments.push({ name, players: [] });
+      localStorage.setItem("tournaments", JSON.stringify(tournaments));
+      alert("Torneo creado con éxito!");
+      window.location.href = "tournaments.html";
+    });
+  }
+
+  // Mostrar torneos
+  const tournamentList = document.getElementById("tournament-list");
+  if (tournamentList) {
+    if (tournaments.length === 0) {
+      tournamentList.innerHTML = "<p>No hay torneos aún.</p>";
+    } else {
+      tournaments.forEach(t => {
+        const div = document.createElement("div");
+        div.classList.add("tournament-card");
+        div.innerHTML = `<h3>${t.name}</h3>
+                         <p>Jugadores inscritos: ${t.players.length}</p>`;
+        tournamentList.appendChild(div);
+      });
     }
-    alert(`¡Bienvenido, ${playerName}! Estás registrado con éxito.`);
-    document.getElementById('player-name').value = '';
+  }
 });
-
-// Función para crear un nuevo torneo
-document.getElementById('create-tournament-form').addEventListener('submit', function(event) {
-    event.preventDefault();
-    const tournamentName = document.getElementById('tournament-name-input').value;
-    if (tournamentName === '') {
-        alert('Por favor, ingresa un nombre para el torneo.');
-        return;
-    }
-
-    const newTournament = {
-        id: tournaments.length + 1,
-        name: tournamentName,
-        players: []
-    };
-    tournaments.push(newTournament);
-    alert(`¡El torneo ${tournamentName} ha sido creado!`);
-    document.getElementById('tournament-name-input').value = '';
-    displayTournaments();
-});
-
-// Mostrar torneos al cargar la página
-window.onload = displayTournaments;

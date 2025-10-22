@@ -1,65 +1,42 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Organizador de Torneos Tekken</title>
-    <link rel="stylesheet" href="CSS/styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tekken Arena</title>
+  <link rel="stylesheet" href="CSS/styles.css">
 </head>
 <body>
-    <!-- Header y Portada -->
-    <header id="header">
-        <div class="intro">
-            <h1>Bienvenido al Organizador de Torneos Tekken</h1>
-            <p>¡Tu plataforma para competir en los torneos más épicos de Tekken!</p>
-            <a href="#register" class="cta-btn">¡Regístrate y únete a la acción!</a>
-        </div>
-    </header>
+  <header class="hero">
+    <div class="overlay">
+      <h1 class="logo">Tekken Arena</h1>
+      <p>¡Compite, crea y domina los torneos más intensos!</p>
+      <div class="cta-buttons">
+        <a href="./secciones/login.html" class="btn primary">Iniciar Sesión</a>
+        <a href="./secciones/register.html" class="btn secondary">Registrarse</a>
+      </div>
+    </div>
+  </header>
 
-    <!-- Menú de Navegación -->
-    <nav id="navbar">
-        <ul>
-            <li><a href="#home">Inicio</a></li>
-            <li><a href="#register">Registrar Usuario</a></li>
-            <li><a href="#view-tournaments">Ver Torneos</a></li>
-            <li><a href="#create-tournament">Crear Torneo</a></li>
-        </ul>
-    </nav>
+  <nav class="navbar">
+    <ul>
+      <li><a href="index.html">Inicio</a></li>
+      <li><a href="./secciones/tournaments.html">Torneos</a></li>
+      <li><a href="./secciones/create.html">Crear Torneo</a></li>
+    </ul>
+  </nav>
 
-    <!-- Sección de Registro -->
-    <section id="register">
-        <h2>Regístrate para Participar</h2>
-        <form id="register-form">
-            <label for="player-name">Nombre de Usuario:</label>
-            <input type="text" id="player-name" required>
-            <button type="submit">Registrarse</button>
-        </form>
+  <main class="content">
+    <section>
+      <h2>Bienvenido al mundo Tekken</h2>
+      <p>Organiza tus propios torneos, desafía a tus amigos y escala a la cima del ranking. ¡Solo los mejores luchadores sobrevivirán!</p>
     </section>
+  </main>
 
-    <!-- Ver Torneos -->
-    <section id="view-tournaments">
-        <h2>Torneos Disponibles</h2>
-        <div id="tournament-list">
-            <!-- Aquí se mostrarán los torneos -->
-        </div>
-    </section>
-
-    <!-- Crear Torneo -->
-    <section id="create-tournament">
-        <h2>Crear un Nuevo Torneo</h2>
-        <form id="create-tournament-form">
-            <label for="tournament-name-input">Nombre del Torneo:</label>
-            <input type="text" id="tournament-name-input" required>
-            <button type="submit">Crear Torneo</button>
-        </form>
-    </section>
-
-    <!-- Footer -->
-    <footer>
-        <p>&copy; 2025 Organizador de Torneos Tekken. Todos los derechos reservados.</p>
-    </footer>
-
-    <script src="JavaScript/script.js"></script>
+  <footer>
+    <p>&copy; 2025 Tekken Tournaments. Todos los derechos reservados.</p>
+  </footer>
 </body>
 </html>
+
 
