@@ -3,6 +3,7 @@ package com.example.tekkentournaments
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -10,44 +11,48 @@ import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.filled.Person // Necesario si no carga la foto
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.example.tekkentournaments.clases.Tournament
+import com.example.tekkentournaments.clases.User
 import com.example.tekkentournaments.repositories.TournamentRepository
+import com.example.tekkentournaments.repositories.UserRepository
 import io.github.jan.supabase.postgrest.from
-import supabase
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    onNavigateToList: () -> Unit = {}, // Callback para ir a la lista completa
+    onNavigateToList: () -> Unit = {},
     onNavigateToProfile: () -> Unit = {}
 ) {
-    // Estado para datos informativos
+    // Estado para el Torneo Destacado y el Usuario actual
     var featuredTournament by remember { mutableStateOf<Tournament?>(null) }
-    var totalPlayers by remember { mutableStateOf(0) }
-    var totalTournaments by remember { mutableStateOf(0) }
+    var currentUser by remember { mutableStateOf<User?>(null) }
     var isLoading by remember { mutableStateOf(true) }
 
-    // Cargar datos "resumen" (Solo lo necesario para informar)
     LaunchedEffect(Unit) {
         try {
-            // 1. Traer el torneo más reciente para destacarlo
+            // 1. Cargamos el torneo más reciente
             val tournaments = TournamentRepository.obtenerTorneos()
             featuredTournament = tournaments.firstOrNull()
-            totalTournaments = tournaments.size
 
-            // 2. Contar jugadores (Count simple)
-            val playersCount = supabase.from("users").select().countOrNull()
-            totalPlayers = playersCount?.toInt() ?: 0
+            // 2. Cargamos QUIÉN es el usuario para saludarle por su nombre
+            currentUser = UserRepository.obtenerMiPerfil()
 
             isLoading = false
         } catch (e: Exception) {
@@ -56,13 +61,13 @@ fun HomeScreen(
     }
 
     Scaffold(
-        containerColor = Color(0xFF121212), // Fondo oscuro estilo Tekken
+        containerColor = Color(0xFF121212),
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text("TEKKEN HUB", fontWeight = FontWeight.Black, letterSpacing = 2.sp) },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = Color(0xFF1E1E1E),
-                    titleContentColor = Color(0xFFD32F2F) // Rojo Tekken
+                    titleContentColor = Color(0xFFD32F2F)
                 )
             )
         }
@@ -71,166 +76,192 @@ fun HomeScreen(
             modifier = Modifier
                 .padding(innerPadding)
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState()) // Scroll por si la pantalla es pequeña
+                .verticalScroll(rememberScrollState())
         ) {
 
-            // --- 1. HERO SECTION (BIENVENIDA) ---
+            // --- 1. NUEVA CABECERA: PLAYER ID CARD ---
+            // Un panel visual que muestra al jugador actual
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(180.dp)
+                    .height(160.dp)
                     .background(
-                        Brush.verticalGradient(
-                            colors = listOf(Color(0xFF1E1E1E), Color(0xFF121212))
+                        Brush.horizontalGradient(
+                            colors = listOf(Color(0xFF1E1E1E), Color(0xFF2C2C2C))
                         )
                     )
             ) {
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.CenterStart)
-                        .padding(24.dp)
-                ) {
-                    Text(
-                        text = "Bienvenido, Luchador.",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "La batalla por el Puño de Hierro continúa.\nRevisa los eventos destacados.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.LightGray
-                    )
+                // Decoración de fondo (Línea roja)
+                Box(modifier = Modifier.fillMaxHeight().width(4.dp).background(Color(0xFFD32F2F)))
+
+                if (currentUser != null) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(24.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Foto de perfil
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(currentUser?.profileImage ?: "")
+                                .crossfade(true)
+                                .error(android.R.drawable.ic_menu_camera)
+                                .build(),
+                            contentDescription = "Avatar",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .size(80.dp)
+                                .clip(CircleShape)
+                                .background(Color.Gray)
+                        )
+
+                        Spacer(modifier = Modifier.width(20.dp))
+
+                        // Información
+                        Column {
+                            Text(
+                                text = "READY TO FIGHT,",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.Gray,
+                                letterSpacing = 2.sp
+                            )
+                            Text(
+                                text = currentUser?.username?.uppercase() ?: "LUCHADOR",
+                                style = MaterialTheme.typography.headlineMedium,
+                                color = Color.White,
+                                fontWeight = FontWeight.Black
+                            )
+                            // El "Lema" o Status del usuario
+                            if (!currentUser?.status.isNullOrBlank()) {
+                                Text(
+                                    text = "\"${currentUser?.status}\"",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color(0xFFD32F2F),
+                                    fontStyle = FontStyle.Italic,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                } else if (isLoading) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = Color(0xFFD32F2F))
+                    }
                 }
-            }
-
-            // --- 2. ESTADÍSTICAS RÁPIDAS (Estilo Dashboard) ---
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                StatCard(
-                    title = "Jugadores",
-                    value = if (isLoading) "-" else totalPlayers.toString(),
-                    icon = Icons.Default.Groups,
-                    modifier = Modifier.weight(1f)
-                )
-                StatCard(
-                    title = "Torneos",
-                    value = if (isLoading) "-" else totalTournaments.toString(),
-                    icon = Icons.Default.EmojiEvents,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            // --- 3. SECCIÓN INFORMATIVA: EVENTO DESTACADO ---
-            Text(
-                text = "Evento Principal",
-                style = MaterialTheme.typography.titleLarge,
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-            )
-
-            if (isLoading) {
-                Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = Color(0xFFD32F2F))
-                }
-            } else {
-                featuredTournament?.let { torneo ->
-                    FeaturedTournamentCard(torneo)
-                } ?: Text(
-                    "No hay eventos programados.",
-                    color = Color.Gray,
-                    modifier = Modifier.padding(16.dp)
-                )
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // --- 4. MENÚ DE ACCESO (Botones grandes) ---
-            Text(
-                text = "Acciones Rápidas",
-                style = MaterialTheme.typography.titleLarge,
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-            )
-
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-
-                MenuButton(
-                    text = "Explorar Todos los Torneos",
-                    icon = Icons.Default.TrendingUp,
-                    onClick = onNavigateToList
-                )
-
-                MenuButton(
-                    text = "Mi Perfil de Jugador",
-                    icon = Icons.Default.SportsEsports,
-                    onClick = onNavigateToProfile
-                )
+            // --- 2. SECCIÓN EVENTO DESTACADO (Rediseñada) ---
+            PaddingBox(title = "PRÓXIMO GRAN TORNEO") {
+                if (featuredTournament != null) {
+                    FeaturedTournamentCard(featuredTournament!!)
+                } else if (!isLoading) {
+                    Text(
+                        "No hay torneos activos. ¡Es hora de entrenar!",
+                        color = Color.Gray,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
             }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // --- 3. ACCIONES RÁPIDAS (Esto te gustaba, lo mantenemos igual) ---
+            PaddingBox(title = "ACCIONES RÁPIDAS") {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    MenuButton(
+                        text = "Explorar Todos los Torneos",
+                        icon = Icons.Default.TrendingUp,
+                        onClick = onNavigateToList
+                    )
+
+                    MenuButton(
+                        text = "Mi Perfil de Jugador",
+                        icon = Icons.Default.SportsEsports,
+                        onClick = onNavigateToProfile
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }
 
-// --- COMPONENTES AUXILIARES ---
+// --- COMPONENTES AUXILIARES ACTUALIZADOS ---
 
 @Composable
-fun StatCard(title: String, value: String, icon: ImageVector, modifier: Modifier = Modifier) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF2C2C2C))
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Icon(imageVector = icon, contentDescription = null, tint = Color(0xFFD32F2F))
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(text = value, style = MaterialTheme.typography.headlineSmall, color = Color.White, fontWeight = FontWeight.Bold)
-            Text(text = title, style = MaterialTheme.typography.labelMedium, color = Color.Gray)
-        }
+fun PaddingBox(title: String, content: @Composable () -> Unit) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            color = Color.Gray,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.sp,
+            modifier = Modifier.padding(bottom = 12.dp)
+        )
+        content()
     }
 }
 
 @Composable
 fun FeaturedTournamentCard(tournament: Tournament) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFD32F2F).copy(alpha = 0.15f)), // Fondo rojo sutil
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFD32F2F))
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent), // Transparente para usar gradiente
+        shape = RoundedCornerShape(12.dp)
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Badge(containerColor = Color(0xFFD32F2F)) {
-                    Text("PRÓXIMAMENTE", color = Color.White, modifier = Modifier.padding(4.dp))
+        Box(
+            modifier = Modifier
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(Color(0xFF8B0000), Color(0xFF2C2C2C)) // Degradado Rojo oscuro a Gris
+                    )
+                )
+        ) {
+            Column(modifier = Modifier.padding(24.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(
+                        color = Color.White,
+                        shape = RoundedCornerShape(4.dp)
+                    ) {
+                        Text(
+                            "DESTACADO",
+                            color = Color.Black,
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.weight(1f))
+                    Text(
+                        text = tournament.date ?: "TBD",
+                        color = Color.White.copy(alpha = 0.8f),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
-                Spacer(modifier = Modifier.width(8.dp))
+
+                Spacer(modifier = Modifier.height(16.dp))
+
                 Text(
-                    text = tournament.date ?: "Fecha TBD",
-                    color = Color(0xFFFFCDD2), // Rojo muy claro
-                    style = MaterialTheme.typography.labelLarge
+                    text = tournament.name.uppercase(),
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = Color.White,
+                    fontWeight = FontWeight.Black
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "${tournament.tournamentType} • ${tournament.maxPlayers} PLAZAS",
+                    color = Color.LightGray,
+                    style = MaterialTheme.typography.bodyMedium
                 )
             }
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = tournament.name,
-                style = MaterialTheme.typography.headlineSmall,
-                color = Color.White,
-                fontWeight = FontWeight.Black
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Formato: ${tournament.tournamentType} • ${tournament.maxPlayers} Jugadores",
-                color = Color.LightGray
-            )
         }
     }
 }
@@ -239,18 +270,24 @@ fun FeaturedTournamentCard(tournament: Tournament) {
 fun MenuButton(text: String, icon: ImageVector, onClick: () -> Unit) {
     Button(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth().height(56.dp),
+        modifier = Modifier.fillMaxWidth().height(60.dp), // Un poco más altos
         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF333333)),
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(12.dp),
+        elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Start,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(imageVector = icon, contentDescription = null, tint = Color.White)
+            Icon(imageVector = icon, contentDescription = null, tint = Color(0xFFD32F2F)) // Icono rojo
             Spacer(modifier = Modifier.width(16.dp))
-            Text(text = text, style = MaterialTheme.typography.titleMedium, color = Color.White)
+            Text(
+                text = text,
+                style = MaterialTheme.typography.titleMedium,
+                color = Color.White,
+                fontWeight = FontWeight.SemiBold
+            )
         }
     }
 }
