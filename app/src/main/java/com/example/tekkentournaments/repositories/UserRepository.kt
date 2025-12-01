@@ -5,6 +5,7 @@ import com.example.tekkentournaments.clases.User
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
 import supabase
+import io.github.jan.supabase.storage.storage
 
 // Creamos un 'object' para agrupar las funciones de base de datos
 object UserRepository {
@@ -60,6 +61,41 @@ object UserRepository {
         } catch (e: Exception) {
             e.printStackTrace()
             throw e // Lanzamos el error para que la UI sepa que falló
+        }
+    }
+    suspend fun subirAvatar(userId: String, byteArray: ByteArray): String {
+        val bucket = supabase.storage.from("avatars")
+        val fileName = "$userId-${System.currentTimeMillis()}.jpg"
+
+        // Subimos el archivo
+        bucket.upload(fileName, byteArray) {
+            upsert = true
+        }
+
+        // Obtenemos la URL pública para guardarla en la base de datos
+        return bucket.publicUrl(fileName)
+    }
+
+    // 2. Función actualizada para guardar TODO
+    suspend fun actualizarPerfilCompleto(
+        userId: String,
+        nuevoUsername: String,
+        nuevoBio: String,
+        nuevoStatus: String,
+        nuevaImagenUrl: String? = null // Opcional, solo si cambió la foto
+    ) {
+        supabase.from("users").update(
+            {
+                set("username", nuevoUsername)
+                set("bio", nuevoBio)
+                set("status", nuevoStatus)
+                // Solo actualizamos la imagen si nos pasan una nueva URL
+                if (nuevaImagenUrl != null) {
+                    set("profile_image", nuevaImagenUrl)
+                }
+            }
+        ) {
+            filter { eq("id", userId) }
         }
     }
 }

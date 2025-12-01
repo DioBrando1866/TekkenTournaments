@@ -1,15 +1,16 @@
 package com.example.tekkentournaments
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.ExitToApp
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,31 +19,37 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.tekkentournaments.clases.User
-import com.example.tekkentournaments.repositories.AuthRepository
-import com.example.tekkentournaments.repositories.UserRepository
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import kotlinx.coroutines.launch
+
+// --- TUS NUEVOS IMPORTS ---
+// Asegúrate de que estos coincidan exactamente con tus paquetes
+import com.example.tekkentournaments.clases.User
+import com.example.tekkentournaments.repositories.UserRepository
+import com.example.tekkentournaments.repositories.AuthRepository
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     onLogout: () -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit // Este es el callback que activará el botón
 ) {
     var user by remember { mutableStateOf<User?>(null) }
     var isLoading by remember { mutableStateOf(true) }
-
-    // Estados para el diálogo de edición
     var showEditDialog by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
-    // Función para recargar los datos (útil tras editar)
+    // Cargar datos
     fun cargarDatos() {
         scope.launch {
             isLoading = true
@@ -51,10 +58,7 @@ fun ProfileScreen(
         }
     }
 
-    // Cargar datos al entrar
-    LaunchedEffect(Unit) {
-        cargarDatos()
-    }
+    LaunchedEffect(Unit) { cargarDatos() }
 
     Scaffold(
         containerColor = Color(0xFF121212),
@@ -62,125 +66,80 @@ fun ProfileScreen(
             CenterAlignedTopAppBar(
                 title = { Text("FIGHTER PROFILE", fontWeight = FontWeight.Bold, letterSpacing = 2.sp) },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = Color(0xFF1E1E1E),
-                    titleContentColor = Color.White
+                    containerColor = Color(0xFF1E1E1E), titleContentColor = Color.White
                 ),
+                // --- AQUÍ ESTÁ EL BOTÓN DE ATRÁS ---
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack, // Icono de flecha
+                            contentDescription = "Volver",
+                            tint = Color.White
+                        )
+                    }
+                },
+                // -----------------------------------
                 actions = {
-                    IconButton(onClick = {
-                        scope.launch {
-                            AuthRepository.logout()
-                            onLogout()
-                        }
-                    }) {
-                        Icon(Icons.Default.ExitToApp, contentDescription = "Salir", tint = Color(0xFFD32F2F))
+                    IconButton(onClick = { scope.launch { AuthRepository.logout(); onLogout() } }) {
+                        Icon(Icons.Default.ExitToApp, "Salir", tint = Color(0xFFD32F2F))
                     }
                 }
             )
         }
     ) { innerPadding ->
-
         if (isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = Color(0xFFD32F2F))
-            }
-        } else if (user == null) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Error al cargar perfil.", color = Color.Gray)
-            }
-        } else {
-            // UI DEL PERFIL
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Color(0xFFD32F2F)) }
+        } else if (user != null) {
             Column(
-                modifier = Modifier
-                    .padding(innerPadding)
-                    .fillMaxSize()
-                    .padding(16.dp),
+                modifier = Modifier.padding(innerPadding).fillMaxSize().padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // 1. AVATAR
+                // 1. AVATAR CON COIL
                 Box(contentAlignment = Alignment.Center) {
-                    Box(
+                    Box(modifier = Modifier.size(134.dp).clip(CircleShape).background(Brush.linearGradient(listOf(Color(0xFFD32F2F), Color.Black))))
+
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(user!!.profileImage ?: "")
+                            .crossfade(true)
+                            .error(android.R.drawable.ic_menu_camera)
+                            .build(),
+                        contentDescription = "Avatar",
+                        contentScale = ContentScale.Crop,
                         modifier = Modifier
-                            .size(130.dp)
+                            .size(128.dp)
                             .clip(CircleShape)
-                            .background(Brush.linearGradient(listOf(Color(0xFFD32F2F), Color.Black)))
+                            .background(Color(0xFF2C2C2C))
                     )
-                    Surface(
-                        modifier = Modifier.size(120.dp),
-                        shape = CircleShape,
-                        color = Color(0xFF2C2C2C)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = null,
-                            modifier = Modifier.padding(20.dp),
-                            tint = Color.Gray
-                        )
-                    }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // 2. NOMBRE DE USUARIO
-                Text(
-                    text = user!!.username.uppercase(),
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Black,
-                    color = Color.White,
-                    letterSpacing = 1.sp
-                )
+                // 2. DATOS
+                Text(user!!.username.uppercase(), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black, color = Color.White)
 
-                // 3. STATUS (LEMA) - CORREGIDO
-                // Ahora se muestra como un texto destacado/lema debajo del nombre
                 if (!user!!.status.isNullOrBlank()) {
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "\"${user!!.status}\"", // Entre comillas para dar efecto de cita
-                        color = Color(0xFFD32F2F), // Rojo Tekken
-                        fontWeight = FontWeight.Bold,
-                        fontStyle = FontStyle.Italic,
-                        fontSize = 16.sp
-                    )
+                    Text("\"${user!!.status}\"", color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold, fontStyle = FontStyle.Italic, fontSize = 16.sp)
                 }
 
-                // 4. BIOGRAFÍA
                 Spacer(modifier = Modifier.height(16.dp))
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
-                ) {
-                    Text(
-                        text = user!!.bio ?: "Sin biografía definida.",
-                        color = Color.LightGray,
-                        fontSize = 14.sp,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(16.dp).fillMaxWidth()
-                    )
+                Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)), modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+                    Text(user!!.bio ?: "Sin biografía.", color = Color.LightGray, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(16.dp).fillMaxWidth())
                 }
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.weight(1f))
 
-                // 5. ESTADÍSTICAS
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    ProfileStat(label = "RANK", value = "1st Dan", icon = Icons.Default.Shield)
-                    ProfileStat(label = "WINS", value = "0", icon = Icons.Default.Star)
-                    ProfileStat(label = "MATCHES", value = "0", icon = Icons.Default.Edit)
-                }
-
-                Spacer(modifier = Modifier.weight(1f)) // Empuja el botón al fondo
-
-                // 6. BOTÓN EDITAR (Abre el diálogo)
+                // BOTÓN EDITAR
                 Button(
                     onClick = { showEditDialog = true },
                     modifier = Modifier.fillMaxWidth().height(50.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF333333)),
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Icon(Icons.Default.Edit, contentDescription = null, tint = Color.White)
+                    Icon(Icons.Default.Edit, null, tint = Color.White)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("EDITAR PERFIL", color = Color.White)
                 }
@@ -188,17 +147,39 @@ fun ProfileScreen(
         }
     }
 
-    // --- DIÁLOGO DE EDICIÓN ---
+    // DIÁLOGO DE EDICIÓN
     if (showEditDialog && user != null) {
         EditProfileDialog(
+            currentUsername = user!!.username,
             currentBio = user!!.bio ?: "",
             currentStatus = user!!.status ?: "",
+            currentImageUrl = user!!.profileImage,
             onDismiss = { showEditDialog = false },
-            onSave = { newBio, newStatus ->
+            onSave = { newName, newBio, newStatus, newImageUri ->
                 scope.launch {
-                    // Guardamos en Supabase
-                    UserRepository.actualizarPerfil(user!!.id, newBio, newStatus)
-                    // Recargamos la pantalla para ver los cambios
+                    var finalImageUrl: String? = null
+
+                    if (newImageUri != null) {
+                        try {
+                            val inputStream = context.contentResolver.openInputStream(newImageUri)
+                            val bytes = inputStream?.readBytes()
+                            inputStream?.close()
+
+                            if (bytes != null) {
+                                finalImageUrl = UserRepository.subirAvatar(user!!.id, bytes)
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+
+                    UserRepository.actualizarPerfilCompleto(
+                        userId = user!!.id,
+                        nuevoUsername = newName,
+                        nuevoBio = newBio,
+                        nuevoStatus = newStatus,
+                        nuevaImagenUrl = finalImageUrl
+                    )
                     cargarDatos()
                     showEditDialog = false
                 }
@@ -207,77 +188,93 @@ fun ProfileScreen(
     }
 }
 
-// Componente para el Diálogo de Edición
 @Composable
 fun EditProfileDialog(
+    currentUsername: String,
     currentBio: String,
     currentStatus: String,
+    currentImageUrl: String?,
     onDismiss: () -> Unit,
-    onSave: (String, String) -> Unit
+    onSave: (String, String, String, Uri?) -> Unit
 ) {
+    var username by remember { mutableStateOf(currentUsername) }
     var bio by remember { mutableStateOf(currentBio) }
     var status by remember { mutableStateOf(currentStatus) }
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+        onResult = { uri -> selectedImageUri = uri }
+    )
 
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = Color(0xFF1E1E1E),
         title = { Text("Editar Perfil", color = Color.White) },
         text = {
-            Column {
-                // Campo STATUS (Lema)
-                OutlinedTextField(
-                    value = status,
-                    onValueChange = { status = it },
-                    label = { Text("Estado / Lema (Corto)") },
-                    placeholder = { Text("Ej: Mishima Player") },
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color(0xFFD32F2F),
-                        unfocusedBorderColor = Color.Gray,
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedLabelColor = Color(0xFFD32F2F)
-                    )
-                )
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+
+                // SELECTOR DE IMAGEN
+                Box(
+                    modifier = Modifier
+                        .size(100.dp)
+                        .clip(CircleShape)
+                        .background(Color.Gray)
+                        .clickable {
+                            photoPickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (selectedImageUri != null) {
+                        AsyncImage(model = selectedImageUri, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                    } else if (currentImageUrl != null) {
+                        AsyncImage(model = currentImageUrl, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                    } else {
+                        Icon(Icons.Default.CameraAlt, null, tint = Color.White)
+                    }
+
+                    Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.3f)), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.Edit, null, tint = Color.White.copy(alpha = 0.8f))
+                    }
+                }
+                Text("Toca para cambiar foto", color = Color.Gray, fontSize = 10.sp, modifier = Modifier.padding(top = 8.dp))
+
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Campo BIO
+                // CAMPOS
                 OutlinedTextField(
-                    value = bio,
-                    onValueChange = { bio = it },
+                    value = username, onValueChange = { username = it },
+                    label = { Text("Nombre de Usuario") },
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFFD32F2F), unfocusedBorderColor = Color.Gray, focusedTextColor = Color.White, unfocusedTextColor = Color.White)
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = status, onValueChange = { status = it },
+                    label = { Text("Lema / Estado") },
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFFD32F2F), unfocusedBorderColor = Color.Gray, focusedTextColor = Color.White, unfocusedTextColor = Color.White)
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = bio, onValueChange = { bio = it },
                     label = { Text("Biografía") },
-                    placeholder = { Text("Cuéntanos sobre ti...") },
                     maxLines = 3,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color(0xFFD32F2F),
-                        unfocusedBorderColor = Color.Gray,
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedLabelColor = Color(0xFFD32F2F)
-                    )
+                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFFD32F2F), unfocusedBorderColor = Color.Gray, focusedTextColor = Color.White, unfocusedTextColor = Color.White)
                 )
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSave(bio, status) }) {
-                Text("GUARDAR", color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold)
+            TextButton(onClick = { onSave(username, bio, status, selectedImageUri) }) {
+                Text("GUARDAR CAMBIOS", color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("CANCELAR", color = Color.Gray)
-            }
+            TextButton(onClick = onDismiss) { Text("CANCELAR", color = Color.Gray) }
         }
     )
-}
-
-// Componente auxiliar de estadísticas (igual que antes)
-@Composable
-fun ProfileStat(label: String, value: String, icon: ImageVector) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Icon(imageVector = icon, contentDescription = null, tint = Color(0xFFD32F2F), modifier = Modifier.size(28.dp))
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(text = value, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color.White)
-        Text(text = label, fontSize = 10.sp, color = Color.Gray, letterSpacing = 1.sp)
-    }
 }
