@@ -1,0 +1,275 @@
+package com.example.tekkentournaments
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
+
+// Imports de tus paquetes
+import com.example.tekkentournaments.clases.Tournament
+import com.example.tekkentournaments.repositories.TournamentRepository
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TournamentsListScreen(
+    onBack: () -> Unit,
+    onTournamentClick: (String) -> Unit // Para ir al detalle en el futuro
+) {
+    var tournaments by remember { mutableStateOf<List<Tournament>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var showCreateDialog by remember { mutableStateOf(false) }
+
+    val scope = rememberCoroutineScope()
+
+    // Función para recargar la lista
+    fun cargarTorneos() {
+        scope.launch {
+            isLoading = true
+            tournaments = TournamentRepository.obtenerTorneos() // Asegúrate que esta función existe en tu Repo
+            isLoading = false
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        cargarTorneos()
+    }
+
+    Scaffold(
+        containerColor = Color(0xFF121212),
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text("TORNEOS", fontWeight = FontWeight.Black, letterSpacing = 2.sp) },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = Color(0xFF1E1E1E),
+                    titleContentColor = Color.White
+                ),
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, "Volver", tint = Color.White)
+                    }
+                }
+            )
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { showCreateDialog = true },
+                containerColor = Color(0xFFD32F2F), // Rojo Tekken
+                contentColor = Color.White
+            ) {
+                Icon(Icons.Default.Add, "Crear Torneo")
+            }
+        }
+    ) { innerPadding ->
+
+        Column(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+
+            if (isLoading) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = Color(0xFFD32F2F))
+                }
+            } else if (tournaments.isEmpty()) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("No hay torneos disponibles.", color = Color.Gray)
+                }
+            } else {
+                LazyColumn(
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(tournaments) { torneo ->
+                        TournamentItemCard(torneo, onClick = { onTournamentClick(torneo.id) })
+                    }
+                }
+            }
+        }
+    }
+
+    // --- DIÁLOGO PARA CREAR TORNEO ---
+    if (showCreateDialog) {
+        CreateTournamentDialog(
+            onDismiss = { showCreateDialog = false },
+            onConfirm = { name, desc, date, players, type ->
+                scope.launch {
+                    val success = TournamentRepository.crearTorneo(
+                        nombre = name,
+                        descripcion = desc,
+                        fecha = date,
+                        maxJugadores = players,
+                        tipo = type
+                    )
+                    if (success) {
+                        cargarTorneos() // Recargar lista
+                        showCreateDialog = false
+                    }
+                }
+            }
+        )
+    }
+}
+
+// --- TARJETA DE LISTA ---
+@Composable
+fun TournamentItemCard(tournament: Tournament, onClick: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth().clickable { onClick() },
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF333333))
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = tournament.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
+                // Etiqueta de estado (simplificada)
+                Surface(color = Color(0xFFD32F2F).copy(alpha = 0.2f), shape = RoundedCornerShape(4.dp)) {
+                    Text(
+                        text = "ABIERTO",
+                        color = Color(0xFFD32F2F),
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+            if (!tournament.description.isNullOrBlank()) {
+                Text(text = tournament.description, color = Color.Gray, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+            Divider(color = Color(0xFF333333))
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Person, null, tint = Color.Gray, modifier = Modifier.size(14.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(text = tournament.creatorName ?: "Anon", color = Color.Gray, fontSize = 12.sp)
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Group, null, tint = Color.Gray, modifier = Modifier.size(14.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(text = "${tournament.maxPlayers} Max", color = Color.Gray, fontSize = 12.sp)
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.CalendarToday, null, tint = Color.Gray, modifier = Modifier.size(14.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(text = tournament.date ?: "TBD", color = Color.Gray, fontSize = 12.sp)
+                }
+            }
+        }
+    }
+}
+
+// --- FORMULARIO DE CREACIÓN ---
+@Composable
+fun CreateTournamentDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (String, String, String, Int, String) -> Unit
+) {
+    var name by remember { mutableStateOf("") }
+    var desc by remember { mutableStateOf("") }
+    var date by remember { mutableStateOf("2025-12-01") } // Valor por defecto simple
+    var maxPlayers by remember { mutableStateOf("16") }
+    var type by remember { mutableStateOf("Double Elimination") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF1E1E1E),
+        title = { Text("Nuevo Torneo", color = Color.White, fontWeight = FontWeight.Bold) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                // Nombre
+                OutlinedTextField(
+                    value = name, onValueChange = { name = it },
+                    label = { Text("Nombre del Torneo") },
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFFD32F2F), unfocusedBorderColor = Color.Gray,
+                        focusedTextColor = Color.White, unfocusedTextColor = Color.White, focusedLabelColor = Color(0xFFD32F2F)
+                    )
+                )
+
+                // Descripción
+                OutlinedTextField(
+                    value = desc, onValueChange = { desc = it },
+                    label = { Text("Descripción") },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFFD32F2F), unfocusedBorderColor = Color.Gray,
+                        focusedTextColor = Color.White, unfocusedTextColor = Color.White, focusedLabelColor = Color(0xFFD32F2F)
+                    )
+                )
+
+                // Fecha (Texto simple por ahora)
+                OutlinedTextField(
+                    value = date, onValueChange = { date = it },
+                    label = { Text("Fecha (YYYY-MM-DD)") },
+                    singleLine = true,
+                    trailingIcon = { Icon(Icons.Default.CalendarToday, null, tint = Color.Gray) },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFFD32F2F), unfocusedBorderColor = Color.Gray,
+                        focusedTextColor = Color.White, unfocusedTextColor = Color.White, focusedLabelColor = Color(0xFFD32F2F)
+                    )
+                )
+
+                // Max Players (Radio buttons simplificados o texto)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Jugadores:", color = Color.White)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    listOf("8", "16", "32").forEach { num ->
+                        FilterChip(
+                            selected = maxPlayers == num,
+                            onClick = { maxPlayers = num },
+                            label = { Text(num) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Color(0xFFD32F2F),
+                                selectedLabelColor = Color.White,
+                                containerColor = Color(0xFF333333),
+                                labelColor = Color.White
+                            )
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (name.isNotEmpty()) {
+                        onConfirm(name, desc, date, maxPlayers.toIntOrNull() ?: 16, type)
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
+            ) {
+                Text("CREAR", color = Color.White, fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("CANCELAR", color = Color.Gray)
+            }
+        }
+    )
+}
