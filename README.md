@@ -66,7 +66,3 @@ La hoja de ruta del proyecto contempla la integración de tecnologías emergente
 * **Tecnología Blockchain:** Desarrollo de un sistema de certificación de victorias mediante hashes criptográficos o tokens no fungibles (SBT), proporcionando un historial de torneos inmutable y verificable.
 
 ---
-
-## Licencia
-
-Este proyecto se distribuye bajo la licencia MIT. Consulte el archivo `LICENSE` para obtener más información.
