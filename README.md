@@ -36,14 +36,6 @@ Se ha implementado un sistema de gamificación denominado "Tekken Cards" para in
 
 ---
 
-## Capturas de Pantalla
-
-| Dashboard | Perfil de Usuario | Detalles del Torneo | Bracket |
-|:---:|:---:|:---:|:---:|
-| <img src="docs/screenshots/home.png" width="200" alt="Dashboard Principal" /> | <img src="docs/screenshots/profile.png" width="200" alt="Perfil de Usuario" /> | <img src="docs/screenshots/detail.png" width="200" alt="Detalle de Torneo" /> | <img src="docs/screenshots/bracket.png" width="200" alt="Vista de Bracket" /> |
-
----
-
 ## Especificaciones Técnicas
 
 El desarrollo sigue los estándares y recomendaciones actuales para el desarrollo en Android.
