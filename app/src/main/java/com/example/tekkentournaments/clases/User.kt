@@ -10,5 +10,6 @@ data class User(
     @SerialName("profile_image") val profileImage: String? = null,
     val bio: String? = null,
     val status: String? = null, // Ej: "Buscando partida", "Offline"
+    val wins: Int = 0,
     @SerialName("created_at") val createdAt: String? = null
 )

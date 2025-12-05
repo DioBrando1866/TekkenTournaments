@@ -18,29 +18,26 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import kotlinx.coroutines.launch
 
-// --- TUS NUEVOS IMPORTS ---
-// Asegúrate de que estos coincidan exactamente con tus paquetes
+// Imports de tus paquetes
 import com.example.tekkentournaments.clases.User
 import com.example.tekkentournaments.repositories.UserRepository
 import com.example.tekkentournaments.repositories.AuthRepository
+//import com.example.tekkentournaments.TekkenCard// Asegúrate de tener el archivo TekkenCard.kt creado
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     onLogout: () -> Unit,
-    onBack: () -> Unit // Este es el callback que activará el botón
+    onBack: () -> Unit
 ) {
     var user by remember { mutableStateOf<User?>(null) }
     var isLoading by remember { mutableStateOf(true) }
@@ -49,7 +46,7 @@ fun ProfileScreen(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    // Cargar datos
+    // Función para recargar datos
     fun cargarDatos() {
         scope.launch {
             isLoading = true
@@ -68,17 +65,11 @@ fun ProfileScreen(
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = Color(0xFF1E1E1E), titleContentColor = Color.White
                 ),
-                // --- AQUÍ ESTÁ EL BOTÓN DE ATRÁS ---
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack, // Icono de flecha
-                            contentDescription = "Volver",
-                            tint = Color.White
-                        )
+                        Icon(Icons.Default.ArrowBack, "Volver", tint = Color.White)
                     }
                 },
-                // -----------------------------------
                 actions = {
                     IconButton(onClick = { scope.launch { AuthRepository.logout(); onLogout() } }) {
                         Icon(Icons.Default.ExitToApp, "Salir", tint = Color(0xFFD32F2F))
@@ -88,51 +79,43 @@ fun ProfileScreen(
         }
     ) { innerPadding ->
         if (isLoading) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Color(0xFFD32F2F)) }
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = Color(0xFFD32F2F))
+            }
         } else if (user != null) {
             Column(
-                modifier = Modifier.padding(innerPadding).fillMaxSize().padding(16.dp),
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .fillMaxSize()
+                    .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
-                // 1. AVATAR CON COIL
-                Box(contentAlignment = Alignment.Center) {
-                    Box(modifier = Modifier.size(134.dp).clip(CircleShape).background(Brush.linearGradient(listOf(Color(0xFFD32F2F), Color.Black))))
+                // --- 1. TEKKEN CARD (Componente Visual) ---
+                TekkenCard(user = user!!)
 
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(user!!.profileImage ?: "")
-                            .crossfade(true)
-                            .error(android.R.drawable.ic_menu_camera)
-                            .build(),
-                        contentDescription = "Avatar",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .size(128.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF2C2C2C))
-                    )
-                }
+                Spacer(modifier = Modifier.height(24.dp))
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // 2. DATOS
-                Text(user!!.username.uppercase(), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black, color = Color.White)
-
-                if (!user!!.status.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("\"${user!!.status}\"", color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold, fontStyle = FontStyle.Italic, fontSize = 16.sp)
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-                Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)), modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-                    Text(user!!.bio ?: "Sin biografía.", color = Color.LightGray, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(16.dp).fillMaxWidth())
+                // --- 2. BIOGRAFÍA ---
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text("BIOGRAFÍA", color = Color.Gray, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = user!!.bio ?: "Sin biografía definida.",
+                            color = Color.LightGray,
+                            fontSize = 14.sp
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                // BOTÓN EDITAR
+                // --- 3. BOTÓN EDITAR ---
                 Button(
                     onClick = { showEditDialog = true },
                     modifier = Modifier.fillMaxWidth().height(50.dp),
@@ -147,7 +130,7 @@ fun ProfileScreen(
         }
     }
 
-    // DIÁLOGO DE EDICIÓN
+    // --- DIÁLOGO DE EDICIÓN ---
     if (showEditDialog && user != null) {
         EditProfileDialog(
             currentUsername = user!!.username,
@@ -159,6 +142,7 @@ fun ProfileScreen(
                 scope.launch {
                     var finalImageUrl: String? = null
 
+                    // Si hay imagen nueva, subirla a Supabase Storage
                     if (newImageUri != null) {
                         try {
                             val inputStream = context.contentResolver.openInputStream(newImageUri)
@@ -173,6 +157,7 @@ fun ProfileScreen(
                         }
                     }
 
+                    // Actualizar en base de datos
                     UserRepository.actualizarPerfilCompleto(
                         userId = user!!.id,
                         nuevoUsername = newName,
@@ -214,7 +199,7 @@ fun EditProfileDialog(
         text = {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
 
-                // SELECTOR DE IMAGEN
+                // Selector de Imagen
                 Box(
                     modifier = Modifier
                         .size(100.dp)
@@ -232,45 +217,36 @@ fun EditProfileDialog(
                     } else {
                         Icon(Icons.Default.CameraAlt, null, tint = Color.White)
                     }
-
                     Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.3f)), contentAlignment = Alignment.Center) {
                         Icon(Icons.Default.Edit, null, tint = Color.White.copy(alpha = 0.8f))
                     }
                 }
-                Text("Toca para cambiar foto", color = Color.Gray, fontSize = 10.sp, modifier = Modifier.padding(top = 8.dp))
+                Text("Cambiar foto", color = Color.Gray, fontSize = 10.sp, modifier = Modifier.padding(top = 8.dp))
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // CAMPOS
                 OutlinedTextField(
                     value = username, onValueChange = { username = it },
-                    label = { Text("Nombre de Usuario") },
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFFD32F2F), unfocusedBorderColor = Color.Gray, focusedTextColor = Color.White, unfocusedTextColor = Color.White)
+                    label = { Text("Nombre de Usuario") }, singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White, focusedBorderColor = Color(0xFFD32F2F), unfocusedBorderColor = Color.Gray)
                 )
-
                 Spacer(modifier = Modifier.height(8.dp))
-
                 OutlinedTextField(
                     value = status, onValueChange = { status = it },
-                    label = { Text("Lema / Estado") },
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFFD32F2F), unfocusedBorderColor = Color.Gray, focusedTextColor = Color.White, unfocusedTextColor = Color.White)
+                    label = { Text("Lema / Estado") }, singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White, focusedBorderColor = Color(0xFFD32F2F), unfocusedBorderColor = Color.Gray)
                 )
-
                 Spacer(modifier = Modifier.height(8.dp))
-
                 OutlinedTextField(
                     value = bio, onValueChange = { bio = it },
-                    label = { Text("Biografía") },
-                    maxLines = 3,
-                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFFD32F2F), unfocusedBorderColor = Color.Gray, focusedTextColor = Color.White, unfocusedTextColor = Color.White)
+                    label = { Text("Biografía") }, maxLines = 3,
+                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White, focusedBorderColor = Color(0xFFD32F2F), unfocusedBorderColor = Color.Gray)
                 )
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSave(username, bio, status, selectedImageUri) }) {
-                Text("GUARDAR CAMBIOS", color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold)
+            Button(onClick = { onSave(username, bio, status, selectedImageUri) }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))) {
+                Text("GUARDAR CAMBIOS")
             }
         },
         dismissButton = {
