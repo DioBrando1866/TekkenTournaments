@@ -1,31 +1,34 @@
-# Iron Fist Tournaments
+# TekkenTournaments
 
 ![Android](https://img.shields.io/badge/Android-3DDC84?style=flat&logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-7F52FF?style=flat&logo=kotlin&logoColor=white)
 ![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-4285F4?style=flat&logo=android&logoColor=white)
 ![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=flat&logo=supabase&logoColor=white)
 
-Iron Fist Tournaments es una aplicación nativa para Android desarrollada íntegramente en Kotlin y Jetpack Compose. El propósito del proyecto es ofrecer una solución digital integral para la gestión y organización de torneos competitivos de la Fighting Game Community (FGC), con especialización en Tekken 8.
+TekkenTournaments es una aplicación nativa para Android desarrollada en Kotlin y Jetpack Compose. El proyecto nace con el objetivo fundamental de revitalizar la escena competitiva de la franquicia Tekken en su totalidad, proporcionando una infraestructura digital que facilite la organización de torneos tanto para las entregas más recientes como para los títulos clásicos, asegurando así la preservación de su jugabilidad y comunidad.
 
-La plataforma permite a los organizadores administrar el ciclo de vida completo de un torneo y ofrece a los jugadores un sistema de perfiles persistentes con progresión basada en el rendimiento competitivo.
+La plataforma ofrece una suite completa de herramientas para administradores de eventos y un sistema de progresión persistente para los jugadores.
 
 ---
 
 ## Descripción del Proyecto
 
-El sistema está diseñado bajo una arquitectura moderna para dispositivos móviles, priorizando la escalabilidad y la consistencia de datos en tiempo real. Utiliza Supabase como infraestructura de backend (BaaS), delegando la autenticación, base de datos y almacenamiento de archivos en servicios gestionados para asegurar la integridad y disponibilidad del servicio.
+El sistema ha sido diseñado bajo una arquitectura moderna para dispositivos móviles, priorizando la escalabilidad y la consistencia de datos en tiempo real. Utiliza Supabase como infraestructura de backend (BaaS), delegando la autenticación, base de datos y almacenamiento de archivos en servicios gestionados para garantizar la integridad y disponibilidad del servicio.
+
+### Misión del Proyecto
+El propósito central de TekkenTournaments es evitar que el legado competitivo de las entregas anteriores de Tekken caiga en el olvido. La aplicación permite centralizar la comunidad y ofrecer un estándar profesional para la competición en cualquier versión del juego.
 
 ### Funcionalidades Principales
 
-#### Gestión de Torneos
-El módulo de administración permite a los organizadores configurar eventos con reglas específicas:
+#### Gestión Integral de Torneos
+El módulo de administración permite a los organizadores configurar eventos adaptados a las necesidades de cada título de la saga:
 * **Configuración de Eventos:** Creación de torneos con parámetros definidos como fecha, descripción y límites de participación.
 * **Reglas de Enfrentamiento:** Soporte nativo para formatos competitivos estándar: Best of 3 (Bo3), Best of 5 (Bo5) y First to 5 (Ft5).
 * **Generación de Brackets:** Algoritmo de emparejamiento automático y visualización de árbol de torneo interactivo.
 * **Control de Flujo:** Gestión de estados del torneo (Abierto, En Curso, Finalizado) y actualización de resultados en tiempo real.
 
 #### Sistema de Progresión de Usuario
-Se ha implementado un sistema de gamificación denominado "Tekken Cards" para incentivar la participación y el rendimiento:
+Se ha implementado un sistema de gamificación denominado "Tekken Cards" para incentivar la participación continua:
 * **Perfiles Evolutivos:** La interfaz del perfil de usuario cambia dinámicamente basándose en las estadísticas acumuladas en la base de datos.
 * **Jerarquía de Rangos:** Clasificación automática de usuarios según número de victorias (Beginner, Warrior, Battle Ruler, Tekken Emperor, God of Destruction).
 * **Identidad Digital:** Gestión de avatares personalizados mediante almacenamiento en la nube y campos de biografía editables.
@@ -63,6 +66,10 @@ El proyecto implementa el patrón de diseño **MVVM (Model-View-ViewModel)** jun
 La hoja de ruta del proyecto contempla la integración de tecnologías emergentes para automatizar y certificar los resultados:
 
 * **Integración de Inteligencia Artificial:** Implementación de Google Gemini Flash para el análisis de imágenes, permitiendo la validación automática de resultados mediante capturas de pantalla del juego.
-* **Tecnología Blockchain:** Desarrollo de un sistema de certificación de victorias mediante hashes criptográficos o tokens no fungibles (SBT), proporcionando un historial de torneos inmutable y verificable.
+* **Tecnología Blockchain:** Desarrollo de un sistema de certificación de victorias mediante hashes criptográficos, proporcionando un historial de torneos inmutable y verificable.
 
 ---
+
+## Licencia
+
+Este proyecto se distribuye bajo la licencia MIT. Consulte el archivo `LICENSE` para obtener más información.
