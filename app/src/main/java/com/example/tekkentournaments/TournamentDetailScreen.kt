@@ -1,9 +1,11 @@
 package com.example.tekkentournaments
 
+import android.widget.Toast
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -14,19 +16,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.material.icons.filled.Close
 
-// IMPORTS DE TUS CLASES Y REPOSITORIOS
+// IMPORTS DE CLASES Y REPOSITORIOS
 import com.example.tekkentournaments.clases.Tournament
 import com.example.tekkentournaments.clases.Player
 import com.example.tekkentournaments.clases.Match
 import com.example.tekkentournaments.clases.AIService // Asegúrate de tener AIService.kt creado
 import com.example.tekkentournaments.repositories.TournamentRepository
 import com.example.tekkentournaments.ui.components.BracketMatchCard
-import com.example.tekkentournaments.utils.tekkenRoster // Lista de personajes
+import com.example.tekkentournaments.utils.TekkenData // Lista de personajes
 import io.github.jan.supabase.auth.auth
 import supabase
 
@@ -192,6 +197,10 @@ fun TournamentDetailScreen(
     // 1. AÑADIR JUGADOR
     if (showAddPlayerDialog) {
         AddPlayerDialog(
+            // ✅ AÑADIDO: Pasamos la versión del juego del torneo actual
+            // Si por algún motivo es null, ponemos "Tekken 8" por defecto
+            gameVersion = tournament?.gameVersion ?: "Tekken 8",
+
             onDismiss = { showAddPlayerDialog = false },
             onConfirm = { name, character ->
                 scope.launch {
@@ -223,7 +232,6 @@ fun TournamentDetailScreen(
         )
     }
 
-    // 3. ASISTENTE TÁCTICO (IA)
     if (showAIDialog && aiMatchData != null) {
         val m = aiMatchData!!
         val p1 = players.find { it.id == m.player1Id }
@@ -235,6 +243,11 @@ fun TournamentDetailScreen(
                 char1 = p1.characterMain,
                 p2Name = p2.name,
                 char2 = p2.characterMain,
+
+                // ✅ AÑADIDA ESTA LÍNEA:
+                // Pasamos la versión del juego. Si aún no ha cargado, por defecto "Tekken 8"
+                gameVersion = tournament?.gameVersion ?: "Tekken 8",
+
                 onDismiss = { showAIDialog = false }
             )
         }
@@ -294,9 +307,15 @@ fun InfoTab(tournament: Tournament) {
         Spacer(Modifier.height(24.dp))
         Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)), modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp)) {
-                InfoRow(Icons.Default.VideogameAsset, "Juego", "Tekken 8")
+
+                // 1. AHORA MUESTRA EL JUEGO REAL (Tekken 3, 7, 8...)
+                InfoRow(Icons.Default.VideogameAsset, "Juego", tournament.gameVersion ?: "Tekken 8")
+
                 Divider(color = Color(0xFF333333), modifier = Modifier.padding(vertical = 12.dp))
-                InfoRow(Icons.Default.EmojiEvents, "Formato", tournament.tournamentType)
+
+                // 2. AQUÍ ESTABA EL ERROR: Añadimos '?: "Estándar"'
+                InfoRow(Icons.Default.EmojiEvents, "Formato", tournament.tournamentType ?: "Estándar")
+
                 Divider(color = Color(0xFF333333), modifier = Modifier.padding(vertical = 12.dp))
                 InfoRow(Icons.Default.CalendarToday, "Fecha", tournament.date ?: "TBD")
                 Divider(color = Color(0xFF333333), modifier = Modifier.padding(vertical = 12.dp))
@@ -366,7 +385,7 @@ fun BracketTab(
                                     val esGanador = nuevoScore >= match.maxScore
                                     val actualizado = match.copy(player1Score = nuevoScore, winnerId = if (esGanador) match.player1Id else null)
                                     onMatchUpdate(actualizado)
-                                    if (esGanador) android.widget.Toast.makeText(context, "¡${p1?.name} GANA!", android.widget.Toast.LENGTH_SHORT).show()
+                                    if (esGanador) Toast.makeText(context, "¡${p1?.name} GANA!", Toast.LENGTH_SHORT).show()
                                 }
                             },
                             onP2Click = {
@@ -375,7 +394,7 @@ fun BracketTab(
                                     val esGanador = nuevoScore >= match.maxScore
                                     val actualizado = match.copy(player2Score = nuevoScore, winnerId = if (esGanador) match.player2Id else null)
                                     onMatchUpdate(actualizado)
-                                    if (esGanador) android.widget.Toast.makeText(context, "¡${p2?.name} GANA!", android.widget.Toast.LENGTH_SHORT).show()
+                                    if (esGanador) Toast.makeText(context, "¡${p2?.name} GANA!", Toast.LENGTH_SHORT).show()
                                 }
                             },
                             onAIClick = { onAIClick(match) } // Conectamos el botón IA
@@ -394,36 +413,199 @@ fun BracketTab(
 // ==========================================
 
 @Composable
-fun TacticalAdviceDialog(p1Name: String, char1: String, p2Name: String, char2: String, onDismiss: () -> Unit) {
+fun TacticalAdviceDialog(
+    p1Name: String,
+    char1: String,
+    p2Name: String,
+    char2: String,
+    gameVersion: String,
+    onDismiss: () -> Unit
+) {
+    // Estado: ¿Quién soy yo? (true = Soy P1, false = Soy P2)
+    var isPlayer1Perspective by remember { mutableStateOf(true) }
+
     var advice by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(true) }
 
-    LaunchedEffect(Unit) {
-        advice = AIService.obtenerConsejoTactico(p1Name, char1, p2Name, char2)
+    // Nombres para mostrar en la UI
+    val mainChar = if (isPlayer1Perspective) char1 else char2
+    val rivalChar = if (isPlayer1Perspective) char2 else char1
+
+    // Efecto de carga
+    LaunchedEffect(isPlayer1Perspective) {
+        isLoading = true
+        advice = ""
+        // Llamada a la IA
+        advice = AIService.obtenerConsejoTactico(
+            miPersonaje = mainChar,
+            rivalPersonaje = rivalChar,
+            juego = gameVersion
+        )
         isLoading = false
     }
 
-    AlertDialog(
+    // USAMOS 'Dialog' EN LUGAR DE 'AlertDialog' PARA TENER CONTROL TOTAL DEL TAMAÑO
+    Dialog(
         onDismissRequest = onDismiss,
-        containerColor = Color(0xFF1E1E1E),
-        icon = { Icon(Icons.Default.Psychology, null, tint = Color(0xFF00E5FF)) },
-        title = { Text("ASISTENTE TÁCTICO", color = Color(0xFF00E5FF), fontWeight = FontWeight.Bold, fontSize = 18.sp) },
-        text = {
-            if (isLoading) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-                    CircularProgressIndicator(color = Color(0xFF00E5FF))
-                    Spacer(Modifier.height(16.dp))
-                    Text("Analizando matchup...", color = Color.Gray)
+        properties = DialogProperties(usePlatformDefaultWidth = false) // Permite ocupar ancho completo
+    ) {
+        // TARJETA PRINCIPAL (El contenedor grande)
+        Card(
+            modifier = Modifier
+                .fillMaxWidth(0.95f) // 95% del ancho de la pantalla
+                .fillMaxHeight(0.90f) // 90% del alto (casi pantalla completa)
+                .border(1.dp, Color(0xFF00E5FF).copy(alpha = 0.5f), RoundedCornerShape(16.dp)), // Borde Cyberpunk
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF121212)) // Fondo muy oscuro
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(20.dp)
+            ) {
+                // --- CABECERA ---
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Psychology, null, tint = Color(0xFF00E5FF))
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "FRAME DATA & STRATEGY",
+                            color = Color(0xFF00E5FF),
+                            fontWeight = FontWeight.Black,
+                            fontSize = 16.sp,
+                            letterSpacing = 1.sp
+                        )
+                    }
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.Default.Close, null, tint = Color.Gray)
+                    }
                 }
-            } else {
-                Column {
-                    Text("$char1 vs $char2", color = Color.White, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
-                    Text(advice, color = Color.LightGray, lineHeight = 20.sp)
+
+                Divider(color = Color(0xFF333333), modifier = Modifier.padding(vertical = 12.dp))
+
+                // --- SELECTOR DE PERSPECTIVA (PESTAÑAS GRANDES) ---
+                Text("ANALIZAR DESDE LA VISTA DE:", color = Color.Gray, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp) // Más grandes para tocar fácil
+                        .background(Color(0xFF1E1E1E), RoundedCornerShape(12.dp))
+                        .border(1.dp, Color(0xFF333333), RoundedCornerShape(12.dp))
+                ) {
+                    // Pestaña Izquierda
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .background(
+                                if (isPlayer1Perspective) Color(0xFF00E5FF).copy(alpha = 0.15f) else Color.Transparent,
+                                RoundedCornerShape(topStart = 12.dp, bottomStart = 12.dp)
+                            )
+                            .clickable { isPlayer1Perspective = true }
+                    ) {
+                        Text(
+                            text = char1.uppercase(),
+                            color = if (isPlayer1Perspective) Color(0xFF00E5FF) else Color.Gray,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                        if(isPlayer1Perspective) {
+                            Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(2.dp).background(Color(0xFF00E5FF)))
+                        }
+                    }
+
+                    // Línea divisoria vertical
+                    Box(Modifier.width(1.dp).fillMaxHeight().background(Color(0xFF333333)))
+
+                    // Pestaña Derecha
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .background(
+                                if (!isPlayer1Perspective) Color(0xFF00E5FF).copy(alpha = 0.15f) else Color.Transparent,
+                                RoundedCornerShape(topEnd = 12.dp, bottomEnd = 12.dp)
+                            )
+                            .clickable { isPlayer1Perspective = false }
+                    ) {
+                        Text(
+                            text = char2.uppercase(),
+                            color = if (!isPlayer1Perspective) Color(0xFF00E5FF) else Color.Gray,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                        if(!isPlayer1Perspective) {
+                            Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(2.dp).background(Color(0xFF00E5FF)))
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // --- ZONA DE CONTENIDO (CON SCROLL) ---
+                if (isLoading) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            CircularProgressIndicator(color = Color(0xFF00E5FF), modifier = Modifier.size(40.dp))
+                            Spacer(Modifier.height(16.dp))
+                            Text("Consultando base de datos...", color = Color.Gray, fontSize = 12.sp, fontFamily = FontFamily.Monospace)
+                        }
+                    }
+                } else {
+                    // Título del Matchup
+                    Text(
+                        text = "VS ${rivalChar.uppercase()}",
+                        color = Color.White,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Black
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // CAJA DE TEXTO DEL CONSEJO
+                    Box(
+                        modifier = Modifier
+                            .weight(1f) // Ocupa todo el espacio vertical restante
+                            .fillMaxWidth()
+                            .background(Color(0xFF1A1A1A), RoundedCornerShape(8.dp))
+                            .border(1.dp, Color(0xFF333333), RoundedCornerShape(8.dp))
+                            .padding(16.dp)
+                    ) {
+                        val scrollState = rememberScrollState()
+                        Column(modifier = Modifier.verticalScroll(scrollState)) {
+                            Text(
+                                text = advice,
+                                color = Color(0xFFEEEEEE),
+                                fontSize = 15.sp, // Letra un poco más grande
+                                lineHeight = 24.sp, // Más espacio entre líneas para leer bien
+                                fontFamily = FontFamily.Monospace // Fuente tipo "Hacker" para datos técnicos
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // BOTÓN CERRAR INFERIOR
+                    Button(
+                        onClick = onDismiss,
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF)),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text("ENTENDIDO", color = Color.Black, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
-        },
-        confirmButton = { Button(onClick = onDismiss, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF))) { Text("ENTENDIDO", color = Color.Black, fontWeight = FontWeight.Bold) } }
-    )
+        }
+    }
 }
 
 @Composable
@@ -440,40 +622,87 @@ fun InfoRow(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddPlayerDialog(onDismiss: () -> Unit, onConfirm: (String, String) -> Unit) {
+fun AddPlayerDialog(
+    gameVersion: String, // <--- Importante: Recibimos qué juego es
+    onDismiss: () -> Unit,
+    onConfirm: (String, String) -> Unit
+) {
     var name by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
     var selectedCharacter by remember { mutableStateOf("Random") }
 
+    // Obtenemos la lista correcta usando tu nuevo TekkenData
+    val characterList = remember(gameVersion) {
+        TekkenData.getCharacters(gameVersion)
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = Color(0xFF1E1E1E),
-        title = { Text("Nuevo Participante", color = Color.White) },
+        title = { Text("Nuevo Participante ($gameVersion)", color = Color.White) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+
+                // Input Nombre
                 OutlinedTextField(
                     value = name, onValueChange = { name = it },
-                    label = { Text("Gamertag") }, singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFFD32F2F), unfocusedBorderColor = Color.Gray, focusedTextColor = Color.White, unfocusedTextColor = Color.White),
+                    label = { Text("Gamertag") },
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFFD32F2F), unfocusedBorderColor = Color.Gray,
+                        focusedTextColor = Color.White, unfocusedTextColor = Color.White,
+                        focusedLabelColor = Color(0xFFD32F2F)
+                    ),
                     modifier = Modifier.fillMaxWidth()
                 )
-                ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
+
+                // Input Personaje (Dropdown)
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded }
+                ) {
                     OutlinedTextField(
-                        value = selectedCharacter, onValueChange = {}, readOnly = true, label = { Text("Personaje Main") },
+                        value = selectedCharacter,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Personaje Main") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFFD32F2F), unfocusedBorderColor = Color.Gray, focusedTextColor = Color.White, unfocusedTextColor = Color.White),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFFD32F2F), unfocusedBorderColor = Color.Gray,
+                            focusedTextColor = Color.White, unfocusedTextColor = Color.White,
+                            focusedLabelColor = Color(0xFFD32F2F)
+                        ),
                         modifier = Modifier.menuAnchor().fillMaxWidth()
                     )
-                    ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }, modifier = Modifier.background(Color(0xFF2C2C2C))) {
-                        tekkenRoster.forEach { charName ->
-                            DropdownMenuItem(text = { Text(charName, color = Color.White) }, onClick = { selectedCharacter = charName; expanded = false })
+
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false },
+                        modifier = Modifier.background(Color(0xFF2C2C2C))
+                    ) {
+                        // AQUÍ ES DONDE USAMOS LA NUEVA LISTA
+                        characterList.forEach { charName ->
+                            DropdownMenuItem(
+                                text = { Text(charName, color = Color.White) },
+                                onClick = {
+                                    selectedCharacter = charName
+                                    expanded = false
+                                }
+                            )
                         }
                     }
                 }
             }
         },
-        confirmButton = { Button(onClick = { if (name.isNotBlank()) onConfirm(name, selectedCharacter) }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))) { Text("AÑADIR") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("CANCELAR", color = Color.Gray) } }
+        confirmButton = {
+            Button(
+                onClick = { if (name.isNotBlank()) onConfirm(name, selectedCharacter) },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
+            ) { Text("AÑADIR") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("CANCELAR", color = Color.Gray) }
+        }
     )
 }
 

@@ -7,13 +7,34 @@ import kotlinx.serialization.Serializable
 data class Tournament(
     val id: String,
     val name: String,
-    val date: String? = null,
-    @SerialName("creator_id") val creatorId: String,
-    @SerialName("creator_name") val creatorName: String? = null,
-    val description: String? = null,
-    val rounds: Int? = null, // Número total de rondas
-    @SerialName("tournament_type") val tournamentType: String = "Double Elimination", // "Single", "Double", "Round Robin"
-    @SerialName("is_public") val isPublic: Boolean = true,
-    @SerialName("max_players") val maxPlayers: Int = 64,
-    @SerialName("created_at") val createdAt: String? = null
+
+    // Si la descripción es null, ponemos un texto vacío
+    val description: String? = "Sin descripción",
+
+    // Si la fecha es null, ponemos "TBD" (To Be Determined)
+    val date: String? = "TBD",
+
+    @SerialName("max_players")
+    val maxPlayers: Int = 16,
+
+    // --- EL CAMPO QUE DABA ERROR ---
+    // Lo hacemos nullable (?) y le damos valor por defecto
+    @SerialName("tournament_type")
+    val tournamentType: String? = "Eliminación Simple",
+
+    @SerialName("creator_id")
+    val creatorId: String? = null,
+
+    @SerialName("creator_name")
+    val creatorName: String? = "Desconocido",
+
+    @SerialName("is_public")
+    val isPublic: Boolean = true,
+
+    // Versión del juego (Tekken 8, Tekken 3...)
+    @SerialName("game_version")
+    val gameVersion: String? = "Tekken 8", // También lo protegemos con ? por si acaso
+
+    // Estado del torneo
+    val status: String? = "Abierto"
 )

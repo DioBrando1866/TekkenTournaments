@@ -10,7 +10,7 @@ import com.example.tekkentournaments.clases.Player
 import com.example.tekkentournaments.clases.Match
 import com.example.tekkentournaments.clases.User
 import io.github.jan.supabase.auth.auth
-import supabase // Tu cliente Supabase global
+import supabase
 
 object TournamentRepository {
 
@@ -39,11 +39,11 @@ object TournamentRepository {
         }
     }
 
-    suspend fun crearTorneo(nombre: String, descripcion: String, fecha: String, maxJugadores: Int, tipo: String): Boolean {
+    // ACTUALIZADO: AHORA RECIBE EL JUEGO
+    suspend fun crearTorneo(nombre: String, descripcion: String, fecha: String, maxJugadores: Int, tipo: String, juego: String): Boolean {
         return try {
             val currentUser = supabase.auth.currentUserOrNull() ?: return false
 
-            // Intentamos obtener el nombre del creador
             val userProfile = supabase.from("users").select {
                 filter { eq("id", currentUser.id) }
             }.decodeSingleOrNull<User>()
@@ -56,6 +56,7 @@ object TournamentRepository {
                 date = fecha,
                 maxPlayers = maxJugadores,
                 tournamentType = tipo,
+                gameVersion = juego, // <--- GUARDAMOS LA VERSIÓN DEL JUEGO
                 creatorId = currentUser.id,
                 creatorName = creatorName,
                 isPublic = true
@@ -98,13 +99,14 @@ object TournamentRepository {
 
     // --- 2. GESTIÓN DE JUGADORES ---
 
-    suspend fun agregarJugador(tournamentId: String, nombre: String): Boolean {
+    // ESTA ES LA VERSIÓN CORRECTA QUE INCLUYE PERSONAJE
+    suspend fun agregarJugador(tournamentId: String, nombre: String, personaje: String): Boolean {
         return try {
-            // Nota: Aquí podrías buscar si existe un usuario con ese nombre para guardar su ID real
             val player = Player(
                 id = java.util.UUID.randomUUID().toString(),
                 name = nombre,
-                tournamentId = tournamentId
+                tournamentId = tournamentId,
+                characterMain = personaje
             )
             supabase.from("players").insert(player)
             true
@@ -137,7 +139,6 @@ object TournamentRepository {
             val shuffled = players.shuffled()
             val matches = mutableListOf<Match>()
 
-            // Crear parejas (Ronda 1)
             for (i in shuffled.indices step 2) {
                 if (i + 1 < shuffled.size) {
                     val p1 = shuffled[i]
@@ -158,10 +159,8 @@ object TournamentRepository {
                 }
             }
 
-            // Insertar matches (uno a uno para seguridad en debug)
             matches.forEach { supabase.from("matches").insert(it) }
 
-            // Actualizar estado del torneo
             supabase.from("tournaments").update({
                 set("status", "en_curso")
             }) {
@@ -190,7 +189,6 @@ object TournamentRepository {
 
     suspend fun actualizarPartida(match: Match): Boolean {
         return try {
-            // 1. Actualizar el match en Supabase
             supabase.from("matches").update({
                 set("player1_score", match.player1Score)
                 set("player2_score", match.player2Score)
@@ -199,7 +197,6 @@ object TournamentRepository {
                 filter { eq("id", match.id) }
             }
 
-            // 2. Si hay ganador, SUMAR VICTORIA al perfil del usuario (Gamificación)
             if (match.winnerId != null) {
                 incrementarVictoriaUsuario(match.winnerId)
             }
@@ -211,48 +208,25 @@ object TournamentRepository {
         }
     }
 
-    // Función auxiliar para sumar +1 win
     private suspend fun incrementarVictoriaUsuario(playerId: String) {
         try {
-            // Paso A: Obtener el nombre del jugador que ganó (desde la tabla players)
             val player = supabase.from("players").select {
                 filter { eq("id", playerId) }
             }.decodeSingleOrNull<Player>() ?: return
 
-            // Paso B: Buscar si existe un USUARIO real con ese mismo nombre
-            // (Esto asume que el nombre del Player coincide con el Username, lo cual es común)
             val user = supabase.from("users").select {
                 filter { eq("username", player.name) }
             }.decodeSingleOrNull<User>()
 
-            // Paso C: Si encontramos al usuario, le sumamos 1 victoria
             if (user != null) {
                 supabase.from("users").update({
                     set("wins", user.wins + 1)
                 }) {
                     filter { eq("id", user.id) }
                 }
-                Log.d("REPO", "¡Victoria sumada a ${user.username}! Total: ${user.wins + 1}")
             }
         } catch (e: Exception) {
             Log.e("REPO", "No se pudo sumar victoria al usuario: ${e.message}")
-            // No bloqueamos el flujo principal si esto falla
         }
     }
-    suspend fun agregarJugador(tournamentId: String, nombre: String, personaje: String): Boolean {
-        return try {
-            val player = Player(
-                id = java.util.UUID.randomUUID().toString(),
-                name = nombre,
-                tournamentId = tournamentId,
-                characterMain = personaje // <--- Guardamos el personaje
-            )
-            supabase.from("players").insert(player)
-            true
-        } catch (e: Exception) {
-            e.printStackTrace()
-            false
-        }
-    }
-
 }

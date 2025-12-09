@@ -26,12 +26,13 @@ import kotlinx.coroutines.launch
 // Imports de tus paquetes
 import com.example.tekkentournaments.clases.Tournament
 import com.example.tekkentournaments.repositories.TournamentRepository
+import com.example.tekkentournaments.utils.TekkenData // NECESARIO PARA LA LISTA DE JUEGOS
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TournamentsListScreen(
     onBack: () -> Unit,
-    onTournamentClick: (String) -> Unit // Para ir al detalle en el futuro
+    onTournamentClick: (String) -> Unit
 ) {
     var tournaments by remember { mutableStateOf<List<Tournament>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
@@ -43,7 +44,7 @@ fun TournamentsListScreen(
     fun cargarTorneos() {
         scope.launch {
             isLoading = true
-            tournaments = TournamentRepository.obtenerTorneos() // Asegúrate que esta función existe en tu Repo
+            tournaments = TournamentRepository.obtenerTorneos()
             isLoading = false
         }
     }
@@ -102,18 +103,19 @@ fun TournamentsListScreen(
         }
     }
 
-    // --- DIÁLOGO PARA CREAR TORNEO ---
+    // --- DIÁLOGO PARA CREAR TORNEO ACTUALIZADO ---
     if (showCreateDialog) {
         CreateTournamentDialog(
             onDismiss = { showCreateDialog = false },
-            onConfirm = { name, desc, date, players, type ->
+            onConfirm = { name, desc, date, players, type, game -> // Añadido parámetro game
                 scope.launch {
                     val success = TournamentRepository.crearTorneo(
                         nombre = name,
                         descripcion = desc,
                         fecha = date,
                         maxJugadores = players,
-                        tipo = type
+                        tipo = type,
+                        juego = game // Pasamos el juego al repo
                     )
                     if (success) {
                         cargarTorneos() // Recargar lista
@@ -135,16 +137,27 @@ fun TournamentItemCard(tournament: Tournament, onClick: () -> Unit) {
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = tournament.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
-                )
-                // Etiqueta de estado (simplificada)
+                Column {
+                    Text(
+                        text = tournament.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                    // Mostramos el juego en pequeño debajo del nombre
+                    Text(
+                        // Si gameVersion es null, mostramos "Tekken 8" por defecto
+                        text = tournament.gameVersion ?: "Tekken 8",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color(0xFFD32F2F),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                // Etiqueta de estado
                 Surface(color = Color(0xFFD32F2F).copy(alpha = 0.2f), shape = RoundedCornerShape(4.dp)) {
                     Text(
-                        text = "ABIERTO",
+                        text = if (tournament.status == "en_curso") "EN CURSO" else "ABIERTO",
                         color = Color(0xFFD32F2F),
                         style = MaterialTheme.typography.labelSmall,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -182,17 +195,22 @@ fun TournamentItemCard(tournament: Tournament, onClick: () -> Unit) {
     }
 }
 
-// --- FORMULARIO DE CREACIÓN ---
+// --- FORMULARIO DE CREACIÓN CON SELECTOR DE JUEGO ---
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateTournamentDialog(
     onDismiss: () -> Unit,
-    onConfirm: (String, String, String, Int, String) -> Unit
+    onConfirm: (String, String, String, Int, String, String) -> Unit // Añadido String final para el juego
 ) {
     var name by remember { mutableStateOf("") }
     var desc by remember { mutableStateOf("") }
-    var date by remember { mutableStateOf("2025-12-01") } // Valor por defecto simple
+    var date by remember { mutableStateOf("2025-12-01") }
     var maxPlayers by remember { mutableStateOf("16") }
-    var type by remember { mutableStateOf("Double Elimination") }
+    var type by remember { mutableStateOf("Eliminación Simple") }
+
+    // NUEVO: Estado para el juego
+    var selectedGame by remember { mutableStateOf("Tekken 8") }
+    var expandedGame by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -200,7 +218,43 @@ fun CreateTournamentDialog(
         title = { Text("Nuevo Torneo", color = Color.White, fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                // Nombre
+
+                // 1. SELECTOR DE JUEGO (DROPDOWN)
+                ExposedDropdownMenuBox(
+                    expanded = expandedGame,
+                    onExpandedChange = { expandedGame = !expandedGame }
+                ) {
+                    OutlinedTextField(
+                        value = selectedGame,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Versión del Juego") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedGame) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White, unfocusedTextColor = Color.White,
+                            focusedBorderColor = Color(0xFFD32F2F), unfocusedBorderColor = Color.Gray,
+                            focusedLabelColor = Color(0xFFD32F2F)
+                        ),
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expandedGame,
+                        onDismissRequest = { expandedGame = false },
+                        modifier = Modifier.background(Color(0xFF2C2C2C))
+                    ) {
+                        TekkenData.gameVersions.forEach { game ->
+                            DropdownMenuItem(
+                                text = { Text(game, color = Color.White) },
+                                onClick = {
+                                    selectedGame = game
+                                    expandedGame = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                // 2. RESTO DE CAMPOS
                 OutlinedTextField(
                     value = name, onValueChange = { name = it },
                     label = { Text("Nombre del Torneo") },
@@ -211,7 +265,6 @@ fun CreateTournamentDialog(
                     )
                 )
 
-                // Descripción
                 OutlinedTextField(
                     value = desc, onValueChange = { desc = it },
                     label = { Text("Descripción") },
@@ -221,7 +274,6 @@ fun CreateTournamentDialog(
                     )
                 )
 
-                // Fecha (Texto simple por ahora)
                 OutlinedTextField(
                     value = date, onValueChange = { date = it },
                     label = { Text("Fecha (YYYY-MM-DD)") },
@@ -233,7 +285,6 @@ fun CreateTournamentDialog(
                     )
                 )
 
-                // Max Players (Radio buttons simplificados o texto)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("Jugadores:", color = Color.White)
                     Spacer(modifier = Modifier.width(8.dp))
@@ -258,7 +309,7 @@ fun CreateTournamentDialog(
             Button(
                 onClick = {
                     if (name.isNotEmpty()) {
-                        onConfirm(name, desc, date, maxPlayers.toIntOrNull() ?: 16, type)
+                        onConfirm(name, desc, date, maxPlayers.toIntOrNull() ?: 16, type, selectedGame)
                     }
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
