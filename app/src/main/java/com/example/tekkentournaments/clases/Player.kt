@@ -8,5 +8,6 @@ data class Player(
     val id: String,
     val name: String,
     @SerialName("tournament_id") val tournamentId: String,
-    @SerialName("is_winner") val isWinner: Boolean = false
+    val is_winner: Boolean = false,
+    @SerialName("character_main") val characterMain: String = "Random"
 )

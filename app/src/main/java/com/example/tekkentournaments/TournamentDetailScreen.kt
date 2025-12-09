@@ -23,11 +23,11 @@ import kotlinx.coroutines.launch
 import com.example.tekkentournaments.clases.Tournament
 import com.example.tekkentournaments.clases.Player
 import com.example.tekkentournaments.clases.Match
+import com.example.tekkentournaments.clases.AIService // Asegúrate de tener AIService.kt creado
 import com.example.tekkentournaments.repositories.TournamentRepository
-import com.example.tekkentournaments.ui.components.BracketMatchCard // Asegúrate de haber actualizado este componente con onP1Click/onP2Click
+import com.example.tekkentournaments.ui.components.BracketMatchCard
+import com.example.tekkentournaments.utils.tekkenRoster // Lista de personajes
 import io.github.jan.supabase.auth.auth
-
-// IMPORT GLOBAL DE SUPABASE (Si no lo tienes global, ajusta esto)
 import supabase
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -53,33 +53,30 @@ fun TournamentDetailScreen(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showEditDialog by remember { mutableStateOf(false) }
 
+    // --- ESTADOS PARA LA IA ---
+    var showAIDialog by remember { mutableStateOf(false) }
+    var aiMatchData by remember { mutableStateOf<Match?>(null) }
+
     val scope = rememberCoroutineScope()
-    val context = LocalContext.current // Para mostrar Toasts
+    val context = LocalContext.current
 
     // FUNCIÓN DE CARGA DE DATOS
     fun cargarDatos() {
         scope.launch {
             isLoading = true
-            // 1. Obtener Torneo
             val t = TournamentRepository.obtenerTorneoPorId(tournamentId)
             tournament = t
 
             if (t != null) {
-                // 2. Comprobar si soy el creador
                 val currentUser = supabase.auth.currentUserOrNull()
                 isCreator = (currentUser != null && t.creatorId == currentUser.id)
-
-                // 3. Obtener Jugadores
                 players = TournamentRepository.obtenerJugadores(tournamentId)
-
-                // 4. Obtener Matches (Bracket)
                 matches = TournamentRepository.obtenerMatches(tournamentId)
             }
             isLoading = false
         }
     }
 
-    // Cargar al iniciar
     LaunchedEffect(Unit) { cargarDatos() }
 
     Scaffold(
@@ -104,7 +101,6 @@ fun TournamentDetailScreen(
                         }
                     },
                     actions = {
-                        // BOTONES DE ADMIN (Solo creador)
                         if (isCreator && !isLoading) {
                             IconButton(onClick = { showEditDialog = true }) {
                                 Icon(Icons.Default.Edit, "Editar", tint = Color.White)
@@ -116,7 +112,6 @@ fun TournamentDetailScreen(
                     }
                 )
 
-                // --- BARRA DE PESTAÑAS ---
                 TabRow(
                     selectedTabIndex = selectedTab,
                     containerColor = Color(0xFF1E1E1E),
@@ -128,34 +123,18 @@ fun TournamentDetailScreen(
                         )
                     }
                 ) {
-                    Tab(
-                        selected = selectedTab == 0,
-                        onClick = { selectedTab = 0 },
-                        text = { Text("INFO") },
-                        unselectedContentColor = Color.Gray
-                    )
-                    Tab(
-                        selected = selectedTab == 1,
-                        onClick = { selectedTab = 1 },
-                        text = { Text("JUGADORES (${players.size})") },
-                        unselectedContentColor = Color.Gray
-                    )
-                    Tab(
-                        selected = selectedTab == 2,
-                        onClick = { selectedTab = 2 },
-                        text = { Text("BRACKET") },
-                        unselectedContentColor = Color.Gray
-                    )
+                    Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("INFO") }, unselectedContentColor = Color.Gray)
+                    Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("JUGADORES") }, unselectedContentColor = Color.Gray)
+                    Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }, text = { Text("BRACKET") }, unselectedContentColor = Color.Gray)
                 }
             }
         },
         floatingActionButton = {
-            // --- BOTONES FLOTANTES DE ACCIÓN ---
             Column(
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // 1. BOTÓN VERDE: EMPEZAR TORNEO
+                // Botón Empezar (Verde)
                 if (isCreator && selectedTab == 1 && matches.isEmpty() && players.size >= 2) {
                     ExtendedFloatingActionButton(
                         onClick = { showStartDialog = true },
@@ -168,7 +147,7 @@ fun TournamentDetailScreen(
                     }
                 }
 
-                // 2. BOTÓN ROJO: AÑADIR JUGADOR
+                // Botón Añadir (Rojo)
                 if (isCreator && selectedTab == 1 && matches.isEmpty()) {
                     FloatingActionButton(
                         onClick = { showAddPlayerDialog = true },
@@ -183,26 +162,24 @@ fun TournamentDetailScreen(
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
             if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center),
-                    color = Color(0xFFD32F2F)
-                )
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = Color(0xFFD32F2F))
             } else if (tournament != null) {
-                // CONTENIDO DE LAS PESTAÑAS
                 when (selectedTab) {
                     0 -> InfoTab(tournament!!)
                     1 -> PlayersTab(players)
-                    // PESTAÑA DEL BRACKET CON LÓGICA DE JUEGO
                     2 -> BracketTab(
                         matches = matches,
                         players = players,
-                        isCreator = isCreator, // Pasamos permiso de creador
+                        isCreator = isCreator,
                         onMatchUpdate = { matchActualizado ->
-                            // Callback para guardar en BD
                             scope.launch {
                                 TournamentRepository.actualizarPartida(matchActualizado)
-                                cargarDatos() // Refrescar UI
+                                cargarDatos()
                             }
+                        },
+                        onAIClick = { matchParaAnalizar ->
+                            aiMatchData = matchParaAnalizar
+                            showAIDialog = true
                         }
                     )
                 }
@@ -216,9 +193,9 @@ fun TournamentDetailScreen(
     if (showAddPlayerDialog) {
         AddPlayerDialog(
             onDismiss = { showAddPlayerDialog = false },
-            onConfirm = { name ->
+            onConfirm = { name, character ->
                 scope.launch {
-                    TournamentRepository.agregarJugador(tournamentId, name)
+                    TournamentRepository.agregarJugador(tournamentId, name, character)
                     cargarDatos()
                     showAddPlayerDialog = false
                 }
@@ -226,7 +203,7 @@ fun TournamentDetailScreen(
         )
     }
 
-    // 2. EMPEZAR TORNEO (Con selección de formato)
+    // 2. EMPEZAR TORNEO
     if (showStartDialog) {
         StartTournamentDialog(
             onDismiss = { showStartDialog = false },
@@ -238,7 +215,7 @@ fun TournamentDetailScreen(
                         cargarDatos()
                         selectedTab = 2
                     } else {
-                        android.widget.Toast.makeText(context, "Error al generar. Revisa el Logcat.", android.widget.Toast.LENGTH_LONG).show()
+                        android.widget.Toast.makeText(context, "Error al generar bracket.", android.widget.Toast.LENGTH_LONG).show()
                     }
                     showStartDialog = false
                 }
@@ -246,7 +223,24 @@ fun TournamentDetailScreen(
         )
     }
 
-    // 3. BORRAR TORNEO
+    // 3. ASISTENTE TÁCTICO (IA)
+    if (showAIDialog && aiMatchData != null) {
+        val m = aiMatchData!!
+        val p1 = players.find { it.id == m.player1Id }
+        val p2 = players.find { it.id == m.player2Id }
+
+        if (p1 != null && p2 != null) {
+            TacticalAdviceDialog(
+                p1Name = p1.name,
+                char1 = p1.characterMain,
+                p2Name = p2.name,
+                char2 = p2.characterMain,
+                onDismiss = { showAIDialog = false }
+            )
+        }
+    }
+
+    // 4. BORRAR TORNEO
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
@@ -264,13 +258,11 @@ fun TournamentDetailScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
                 ) { Text("ELIMINAR") }
             },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) { Text("CANCELAR", color = Color.Gray) }
-            }
+            dismissButton = { TextButton(onClick = { showDeleteDialog = false }) { Text("CANCELAR", color = Color.Gray) } }
         )
     }
 
-    // 4. EDITAR TORNEO
+    // 5. EDITAR TORNEO
     if (showEditDialog && tournament != null) {
         EditTournamentDialog(
             currentName = tournament!!.name,
@@ -295,26 +287,12 @@ fun TournamentDetailScreen(
 
 @Composable
 fun InfoTab(tournament: Tournament) {
-    Column(
-        modifier = Modifier
-            .padding(16.dp)
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-    ) {
+    Column(modifier = Modifier.padding(16.dp).fillMaxSize().verticalScroll(rememberScrollState())) {
         Text("DESCRIPCIÓN", color = Color.Gray, fontWeight = FontWeight.Bold, fontSize = 12.sp)
         Spacer(Modifier.height(8.dp))
-        Text(
-            tournament.description ?: "Sin descripción.",
-            color = Color.White,
-            lineHeight = 22.sp
-        )
-
+        Text(tournament.description ?: "Sin descripción.", color = Color.White, lineHeight = 22.sp)
         Spacer(Modifier.height(24.dp))
-
-        Card(
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
-            modifier = Modifier.fillMaxWidth()
-        ) {
+        Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)), modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp)) {
                 InfoRow(Icons.Default.VideogameAsset, "Juego", "Tekken 8")
                 Divider(color = Color(0xFF333333), modifier = Modifier.padding(vertical = 12.dp))
@@ -331,26 +309,18 @@ fun InfoTab(tournament: Tournament) {
 @Composable
 fun PlayersTab(players: List<Player>) {
     if (players.isEmpty()) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("No hay jugadores inscritos.", color = Color.Gray)
-        }
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("No hay jugadores inscritos.", color = Color.Gray) }
     } else {
-        LazyColumn(
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
+        LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(players) { player ->
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)), modifier = Modifier.fillMaxWidth()) {
+                    Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Person, null, tint = Color.Gray)
                         Spacer(Modifier.width(16.dp))
-                        Text(player.name, color = Color.White, fontWeight = FontWeight.Bold)
+                        Column {
+                            Text(player.name, color = Color.White, fontWeight = FontWeight.Bold)
+                            Text("Main: ${player.characterMain}", color = Color(0xFFD32F2F), fontSize = 12.sp)
+                        }
                     }
                 }
             }
@@ -363,12 +333,11 @@ fun BracketTab(
     matches: List<Match>,
     players: List<Player>,
     isCreator: Boolean,
-    onMatchUpdate: (Match) -> Unit // Callback para guardar cambios
+    onMatchUpdate: (Match) -> Unit,
+    onAIClick: (Match) -> Unit // Callback para la IA
 ) {
     if (matches.isEmpty()) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("El torneo no ha comenzado.", color = Color.Gray)
-        }
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("El torneo no ha comenzado.", color = Color.Gray) }
         return
     }
 
@@ -377,39 +346,16 @@ fun BracketTab(
     val horizontalScroll = rememberScrollState()
     val verticalScroll = rememberScrollState()
 
-    Box(
-        Modifier
-            .fillMaxSize()
-            .background(Color(0xFF121212))
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(24.dp)
-                .horizontalScroll(horizontalScroll)
-                .verticalScroll(verticalScroll)
-        ) {
-            // ITERAMOS POR RONDAS
+    Box(Modifier.fillMaxSize().background(Color(0xFF121212))) {
+        Row(modifier = Modifier.padding(24.dp).horizontalScroll(horizontalScroll).verticalScroll(verticalScroll)) {
             rounds.forEach { (roundNum, roundMatches) ->
-
-                Column(
-                    modifier = Modifier.fillMaxHeight(),
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        "RONDA $roundNum",
-                        color = Color(0xFFD32F2F),
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp,
-                        modifier = Modifier.padding(bottom = 16.dp).align(Alignment.CenterHorizontally)
-                    )
+                Column(modifier = Modifier.fillMaxHeight(), verticalArrangement = Arrangement.Center) {
+                    Text("RONDA $roundNum", color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold, fontSize = 12.sp, modifier = Modifier.padding(bottom = 16.dp).align(Alignment.CenterHorizontally))
 
                     roundMatches.forEach { match ->
                         val p1 = players.find { it.id == match.player1Id }
                         val p2 = players.find { it.id == match.player2Id }
 
-                        val spacerHeight = (40 * roundNum).dp
-
-                        // USAMOS EL COMPONENTE CLICABLE
                         BracketMatchCard(
                             match = match,
                             p1 = p1,
@@ -418,38 +364,25 @@ fun BracketTab(
                                 if (isCreator && match.winnerId == null) {
                                     val nuevoScore = match.player1Score + 1
                                     val esGanador = nuevoScore >= match.maxScore
-
-                                    val actualizado = match.copy(
-                                        player1Score = nuevoScore,
-                                        winnerId = if (esGanador) match.player1Id else null
-                                    )
+                                    val actualizado = match.copy(player1Score = nuevoScore, winnerId = if (esGanador) match.player1Id else null)
                                     onMatchUpdate(actualizado)
-                                    if (esGanador) {
-                                        android.widget.Toast.makeText(context, "¡${p1?.name} GANA!", android.widget.Toast.LENGTH_SHORT).show()
-                                    }
+                                    if (esGanador) android.widget.Toast.makeText(context, "¡${p1?.name} GANA!", android.widget.Toast.LENGTH_SHORT).show()
                                 }
                             },
                             onP2Click = {
                                 if (isCreator && match.winnerId == null) {
                                     val nuevoScore = match.player2Score + 1
                                     val esGanador = nuevoScore >= match.maxScore
-
-                                    val actualizado = match.copy(
-                                        player2Score = nuevoScore,
-                                        winnerId = if (esGanador) match.player2Id else null
-                                    )
+                                    val actualizado = match.copy(player2Score = nuevoScore, winnerId = if (esGanador) match.player2Id else null)
                                     onMatchUpdate(actualizado)
-                                    if (esGanador) {
-                                        android.widget.Toast.makeText(context, "¡${p2?.name} GANA!", android.widget.Toast.LENGTH_SHORT).show()
-                                    }
+                                    if (esGanador) android.widget.Toast.makeText(context, "¡${p2?.name} GANA!", android.widget.Toast.LENGTH_SHORT).show()
                                 }
-                            }
+                            },
+                            onAIClick = { onAIClick(match) } // Conectamos el botón IA
                         )
-
-                        Spacer(modifier = Modifier.height(spacerHeight))
+                        Spacer(modifier = Modifier.height((40 * roundNum).dp))
                     }
                 }
-
                 Spacer(modifier = Modifier.width(50.dp))
             }
         }
@@ -457,8 +390,41 @@ fun BracketTab(
 }
 
 // ==========================================
-// COMPONENTES AUXILIARES Y DIÁLOGOS
+// DIÁLOGOS DE APLICACIÓN
 // ==========================================
+
+@Composable
+fun TacticalAdviceDialog(p1Name: String, char1: String, p2Name: String, char2: String, onDismiss: () -> Unit) {
+    var advice by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        advice = AIService.obtenerConsejoTactico(p1Name, char1, p2Name, char2)
+        isLoading = false
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF1E1E1E),
+        icon = { Icon(Icons.Default.Psychology, null, tint = Color(0xFF00E5FF)) },
+        title = { Text("ASISTENTE TÁCTICO", color = Color(0xFF00E5FF), fontWeight = FontWeight.Bold, fontSize = 18.sp) },
+        text = {
+            if (isLoading) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                    CircularProgressIndicator(color = Color(0xFF00E5FF))
+                    Spacer(Modifier.height(16.dp))
+                    Text("Analizando matchup...", color = Color.Gray)
+                }
+            } else {
+                Column {
+                    Text("$char1 vs $char2", color = Color.White, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
+                    Text(advice, color = Color.LightGray, lineHeight = 20.sp)
+                }
+            }
+        },
+        confirmButton = { Button(onClick = onDismiss, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF))) { Text("ENTENDIDO", color = Color.Black, fontWeight = FontWeight.Bold) } }
+    )
+}
 
 @Composable
 fun InfoRow(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, value: String) {
@@ -472,145 +438,83 @@ fun InfoRow(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddPlayerDialog(onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
+fun AddPlayerDialog(onDismiss: () -> Unit, onConfirm: (String, String) -> Unit) {
     var name by remember { mutableStateOf("") }
+    var expanded by remember { mutableStateOf(false) }
+    var selectedCharacter by remember { mutableStateOf("Random") }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = Color(0xFF1E1E1E),
-        title = { Text("Añadir Participante", color = Color.White) },
+        title = { Text("Nuevo Participante", color = Color.White) },
         text = {
-            OutlinedTextField(
-                value = name, onValueChange = { name = it },
-                label = { Text("Nombre / Gamertag") },
-                singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color(0xFFD32F2F), unfocusedBorderColor = Color.Gray,
-                    focusedTextColor = Color.White, unfocusedTextColor = Color.White,
-                    focusedLabelColor = Color(0xFFD32F2F)
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                OutlinedTextField(
+                    value = name, onValueChange = { name = it },
+                    label = { Text("Gamertag") }, singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFFD32F2F), unfocusedBorderColor = Color.Gray, focusedTextColor = Color.White, unfocusedTextColor = Color.White),
+                    modifier = Modifier.fillMaxWidth()
                 )
-            )
+                ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
+                    OutlinedTextField(
+                        value = selectedCharacter, onValueChange = {}, readOnly = true, label = { Text("Personaje Main") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFFD32F2F), unfocusedBorderColor = Color.Gray, focusedTextColor = Color.White, unfocusedTextColor = Color.White),
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }, modifier = Modifier.background(Color(0xFF2C2C2C))) {
+                        tekkenRoster.forEach { charName ->
+                            DropdownMenuItem(text = { Text(charName, color = Color.White) }, onClick = { selectedCharacter = charName; expanded = false })
+                        }
+                    }
+                }
+            }
         },
-        confirmButton = {
-            Button(
-                onClick = { if (name.isNotBlank()) onConfirm(name) },
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
-            ) { Text("AÑADIR") }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("CANCELAR", color = Color.Gray) }
-        }
+        confirmButton = { Button(onClick = { if (name.isNotBlank()) onConfirm(name, selectedCharacter) }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))) { Text("AÑADIR") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("CANCELAR", color = Color.Gray) } }
     )
 }
 
 @Composable
 fun StartTournamentDialog(onDismiss: () -> Unit, onConfirm: (Int) -> Unit) {
-    var selectedFormat by remember { mutableStateOf(2) } // 2 = Bo3
-
+    var selectedFormat by remember { mutableStateOf(2) }
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = Color(0xFF1E1E1E),
         title = { Text("Configurar Partidas", color = Color.White) },
         text = {
             Column {
-                Text("Formato de victoria:", color = Color.LightGray, fontSize = 14.sp)
-                Spacer(Modifier.height(16.dp))
-
-                // Opción Bo3
-                Row(
-                    Modifier.fillMaxWidth().clickable { selectedFormat = 2 }.padding(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    RadioButton(
-                        selected = selectedFormat == 2,
-                        onClick = { selectedFormat = 2 },
-                        colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFD32F2F), unselectedColor = Color.Gray)
-                    )
-                    Text("Best of 3 (Primero a 2)", color = Color.White)
-                }
-
-                // Opción Bo5
-                Row(
-                    Modifier.fillMaxWidth().clickable { selectedFormat = 3 }.padding(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    RadioButton(
-                        selected = selectedFormat == 3,
-                        onClick = { selectedFormat = 3 },
-                        colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFD32F2F), unselectedColor = Color.Gray)
-                    )
-                    Text("Best of 5 (Primero a 3)", color = Color.White)
-                }
-
-                // Opción Ft5
-                Row(
-                    Modifier.fillMaxWidth().clickable { selectedFormat = 5 }.padding(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    RadioButton(
-                        selected = selectedFormat == 5,
-                        onClick = { selectedFormat = 5 },
-                        colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFD32F2F), unselectedColor = Color.Gray)
-                    )
-                    Text("First to 5 (Primero a 5)", color = Color.White)
+                Text("Formato de victoria:", color = Color.LightGray, fontSize = 14.sp); Spacer(Modifier.height(16.dp))
+                listOf(2 to "Best of 3 (Primero a 2)", 3 to "Best of 5 (Primero a 3)", 5 to "First to 5 (Primero a 5)").forEach { (valFormat, label) ->
+                    Row(Modifier.fillMaxWidth().clickable { selectedFormat = valFormat }.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(selected = selectedFormat == valFormat, onClick = { selectedFormat = valFormat }, colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFD32F2F), unselectedColor = Color.Gray))
+                        Text(label, color = Color.White)
+                    }
                 }
             }
         },
-        confirmButton = {
-            Button(
-                onClick = { onConfirm(selectedFormat) },
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
-            ) { Text("GENERAR BRACKET") }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("CANCELAR", color = Color.Gray) }
-        }
+        confirmButton = { Button(onClick = { onConfirm(selectedFormat) }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))) { Text("GENERAR BRACKET") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("CANCELAR", color = Color.Gray) } }
     )
 }
 
 @Composable
-fun EditTournamentDialog(
-    currentName: String,
-    currentDesc: String,
-    currentDate: String,
-    currentMax: Int,
-    onDismiss: () -> Unit,
-    onConfirm: (String, String, String, Int) -> Unit
-) {
-    var name by remember { mutableStateOf(currentName) }
-    var desc by remember { mutableStateOf(currentDesc) }
-    var date by remember { mutableStateOf(currentDate) }
-    var maxPlayers by remember { mutableStateOf(currentMax.toString()) }
-
+fun EditTournamentDialog(currentName: String, currentDesc: String, currentDate: String, currentMax: Int, onDismiss: () -> Unit, onConfirm: (String, String, String, Int) -> Unit) {
+    var name by remember { mutableStateOf(currentName) }; var desc by remember { mutableStateOf(currentDesc) }
+    var date by remember { mutableStateOf(currentDate) }; var maxPlayers by remember { mutableStateOf(currentMax.toString()) }
     AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = Color(0xFF1E1E1E),
-        title = { Text("Editar Torneo", color = Color.White) },
+        onDismissRequest = onDismiss, containerColor = Color(0xFF1E1E1E), title = { Text("Editar Torneo", color = Color.White) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = name, onValueChange = { name = it }, label = { Text("Nombre") },
-                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White, focusedBorderColor = Color(0xFFD32F2F), unfocusedBorderColor = Color.Gray)
-                )
-                OutlinedTextField(
-                    value = desc, onValueChange = { desc = it }, label = { Text("Descripción") },
-                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White, focusedBorderColor = Color(0xFFD32F2F), unfocusedBorderColor = Color.Gray)
-                )
-                OutlinedTextField(
-                    value = date, onValueChange = { date = it }, label = { Text("Fecha") },
-                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White, focusedBorderColor = Color(0xFFD32F2F), unfocusedBorderColor = Color.Gray)
-                )
-                OutlinedTextField(
-                    value = maxPlayers, onValueChange = { maxPlayers = it }, label = { Text("Max Jugadores") },
-                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White, focusedBorderColor = Color(0xFFD32F2F), unfocusedBorderColor = Color.Gray)
-                )
+                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Nombre") }, colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White))
+                OutlinedTextField(value = desc, onValueChange = { desc = it }, label = { Text("Descripción") }, colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White))
+                OutlinedTextField(value = date, onValueChange = { date = it }, label = { Text("Fecha") }, colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White))
+                OutlinedTextField(value = maxPlayers, onValueChange = { maxPlayers = it }, label = { Text("Max Jugadores") }, colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White))
             }
         },
-        confirmButton = {
-            Button(onClick = { onConfirm(name, desc, date, maxPlayers.toIntOrNull() ?: 16) }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))) {
-                Text("GUARDAR")
-            }
-        },
+        confirmButton = { Button(onClick = { onConfirm(name, desc, date, maxPlayers.toIntOrNull() ?: 16) }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))) { Text("GUARDAR") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("CANCELAR", color = Color.Gray) } }
     )
 }

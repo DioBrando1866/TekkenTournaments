@@ -94,6 +94,25 @@ fun ProfileScreen(
 
                 // --- 1. TEKKEN CARD (Componente Visual) ---
                 TekkenCard(user = user!!)
+                // --- BOTÓN DE PRUEBA (BORRAR AL TERMINAR LA APP) ---
+                Button(
+                    onClick = {
+                        scope.launch {
+                            // Llamamos al truco
+                            UserRepository.debugSumarVictorias(user!!.id, user!!.wins)
+                            // Recargamos la pantalla para ver el cambio de color
+                            cargarDatos()
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF)), // Color Cyan Neón
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .height(40.dp)
+                ) {
+                    Text("⚡ TEST: SUMAR +10 WINS (SUBIR RANGO)", color = Color.Black, fontWeight = FontWeight.Bold)
+                }
+                // ---------------------------------------------------
 
                 Spacer(modifier = Modifier.height(24.dp))
 

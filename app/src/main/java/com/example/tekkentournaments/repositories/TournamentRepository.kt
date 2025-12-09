@@ -3,13 +3,13 @@ package com.example.tekkentournaments.repositories
 import android.util.Log
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Order
-import io.github.jan.supabase.auth.auth
 
 // Imports de tus clases y cliente supabase
 import com.example.tekkentournaments.clases.Tournament
 import com.example.tekkentournaments.clases.Player
 import com.example.tekkentournaments.clases.Match
 import com.example.tekkentournaments.clases.User
+import io.github.jan.supabase.auth.auth
 import supabase // Tu cliente Supabase global
 
 object TournamentRepository {
@@ -239,4 +239,20 @@ object TournamentRepository {
             // No bloqueamos el flujo principal si esto falla
         }
     }
+    suspend fun agregarJugador(tournamentId: String, nombre: String, personaje: String): Boolean {
+        return try {
+            val player = Player(
+                id = java.util.UUID.randomUUID().toString(),
+                name = nombre,
+                tournamentId = tournamentId,
+                characterMain = personaje // <--- Guardamos el personaje
+            )
+            supabase.from("players").insert(player)
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
 }

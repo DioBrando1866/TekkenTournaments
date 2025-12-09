@@ -98,4 +98,18 @@ object UserRepository {
             filter { eq("id", userId) }
         }
     }
+    suspend fun debugSumarVictorias(userId: String, victoriasActuales: Int) {
+        try {
+            // Sumamos 10 victorias de golpe para saltar de rango rápido
+            val nuevasWins = victoriasActuales + 10
+
+            supabase.from("users").update({
+                set("wins", nuevasWins)
+            }) {
+                filter { eq("id", userId) }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 }
