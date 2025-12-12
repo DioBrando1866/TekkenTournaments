@@ -7,6 +7,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.*
 import com.example.tekkentournaments.ui.theme.TekkenTournamentsTheme
+import com.example.tekkentournaments.utils.LanguageUtils
 
 // 1. AÑADIMOS LA PANTALLA DE DETALLE AL ENUM
 enum class AppScreen {
@@ -17,6 +18,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        LanguageUtils.loadLocale(this)
 
         setContent {
             TekkenTournamentsTheme {

@@ -1,6 +1,5 @@
 package com.example.tekkentournaments
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -13,7 +12,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalContext // Necesario para el contexto
+import androidx.compose.ui.res.stringResource // Importante
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -34,6 +34,7 @@ fun LoginScreen(
     var passwordVisible by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current // Obtenemos el contexto para los strings dentro de la lógica
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -48,14 +49,14 @@ fun LoginScreen(
         ) {
             // LOGO o TÍTULO
             Text(
-                text = "IRON FIST",
+                text = stringResource(R.string.login_title),
                 fontSize = 40.sp,
                 fontWeight = FontWeight.Black,
                 color = Color(0xFFD32F2F), // Rojo
                 letterSpacing = 4.sp
             )
             Text(
-                text = "TOURNAMENTS",
+                text = stringResource(R.string.login_subtitle),
                 fontSize = 16.sp,
                 color = Color.LightGray,
                 letterSpacing = 8.sp
@@ -67,7 +68,7 @@ fun LoginScreen(
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
-                label = { Text("Correo Electrónico") },
+                label = { Text(stringResource(R.string.email_label)) },
                 singleLine = true,
                 leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
                 colors = OutlinedTextFieldDefaults.colors(
@@ -85,7 +86,7 @@ fun LoginScreen(
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text("Contraseña") },
+                label = { Text(stringResource(R.string.password_label)) },
                 singleLine = true,
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
@@ -122,7 +123,8 @@ fun LoginScreen(
                         if (success) {
                             onLoginSuccess()
                         } else {
-                            errorMessage = "Credenciales incorrectas o error de conexión."
+                            // Usamos context.getString() porque estamos dentro de una corrutina
+                            errorMessage = context.getString(R.string.login_error)
                         }
                     }
                 },
@@ -134,14 +136,14 @@ fun LoginScreen(
                 if (isLoading) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                 } else {
-                    Text("ENTRAR AL TORNEO", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text(stringResource(R.string.btn_login), fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             TextButton(onClick = onNavigateToRegister) {
-                Text("¿No tienes cuenta? Regístrate aquí", color = Color.Gray)
+                Text(stringResource(R.string.register_link), color = Color.Gray)
             }
         }
     }

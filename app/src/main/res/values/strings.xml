@@ -1,3 +1,140 @@
 <resources>
-    <string name="app_name">TekkenTournaments</string>
+    <string name="register_title">NUEVO LUCHADOR</string>
+    <string name="username_label">Nombre de Usuario</string>
+    <string name="email_simple">Correo</string>
+    <string name="password_hint_min">Contraseña (min 6 chars)</string>
+    <string name="error_password_length">La contraseña debe tener 6 caracteres.</string>
+    <string name="register_error">Error al registrar. Revisa el correo o la conexión.</string>
+    <string name="btn_register">REGISTRARSE</string>
+    <string name="back_to_login">Volver al Login</string>
+
+    <string name="login_title">IRON FIST</string>
+    <string name="login_subtitle">TOURNAMENTS</string>
+    <string name="email_label">Correo Electrónico</string>
+    <string name="password_label">Contraseña</string>
+    <string name="login_error">Credenciales incorrectas o error de conexión.</string>
+    <string name="btn_login">ENTRAR AL TORNEO</string>
+    <string name="register_link">¿No tienes cuenta? Regístrate aquí</string>
+
+    <string name="app_name">Tekken Hub</string>
+
+    <string name="profile_title">PERFIL DE LUCHADOR</string>
+    <string name="wins_label">VICTORIAS</string>
+    <string name="biography">BIOGRAFÍA</string>
+    <string name="edit_profile">EDITAR PERFIL</string>
+    <string name="btn_logout">SALIR</string>
+
+    <string name="wallet_title">CARTERA TEKKEN (SEPOLIA)</string>
+    <string name="wallet_subtitle">Conecta tu wallet para gestionar tus activos.</string>
+    <string name="btn_check_balance">SALDO</string>
+    <string name="btn_tickets">ENTRADAS</string>
+    <string name="balance_label">Saldo Actual:</string>
+    <string name="wallet_hint">Dirección ETH (0x...)</string>
+
+    <string name="tickets_title">NFT ASSETS &amp; TICKETS</string>
+    <string name="sync_blockchain">Sincronizando con Blockchain...</string>
+    <string name="verified_on_chain">Verificado en Cadena</string>
+    <string name="empty_slot">SLOT VACÍO</string>
+    <string name="empty_slot_desc">No se detectaron NFTs de torneo en esta wallet.\nParticipa en eventos para conseguir uno.</string>
+    <string name="btn_update_wallet">ACTUALIZAR WALLET</string>
+
+    <string name="home_title">TEKKEN HUB</string>
+    <string name="ready_to_fight">READY TO FIGHT,</string>
+    <string name="fighter_default">LUCHADOR</string>
+    <string name="next_tournament_title">PRÓXIMO GRAN TORNEO</string>
+    <string name="no_tournaments_msg">No hay torneos activos. ¡Es hora de entrenar!</string>
+    <string name="quick_actions">ACCIONES RÁPIDAS</string>
+    <string name="explore_tournaments">Explorar Todos los Torneos</string>
+    <string name="my_player_profile">Mi Perfil de Jugador</string>
+    <string name="featured_label">DESTACADO</string>
+    <string name="date_tbd">TBD</string>
+    <string name="slots_label">PLAZAS</string>
+
+    <string name="tournaments_list_title">TORNEOS</string>
+    <string name="cd_create_tournament">Crear Torneo</string>
+    <string name="no_tournaments_list">No hay torneos disponibles.</string>
+
+    <string name="status_ongoing">EN CURSO</string>
+    <string name="status_open">ABIERTO</string>
+    <string name="creator_anon">Anon</string>
+    <string name="max_suffix">Max</string>
+
+    <string name="main_character_label">MAIN:</string>
+
+    <string name="new_tournament_dialog_title">Nuevo Torneo</string>
+    <string name="game_version_label">Versión del Juego</string>
+    <string name="tournament_name_label">Nombre del Torneo</string>
+    <string name="date_format_label">Fecha (YYYY-MM-DD)</string>
+    <string name="players_selector_label">Jugadores:</string>
+    <string name="btn_create">CREAR</string>
+
+    <string name="loading_tournament">CARGANDO...</string>
+    <string name="tab_info">INFO</string>
+    <string name="tab_players">JUGADORES</string>
+    <string name="tab_bracket">BRACKET</string>
+    <string name="btn_start">EMPEZAR</string>
+    <string name="btn_add">Añadir</string>
+    <string name="btn_edit">Editar</string>
+    <string name="btn_delete">Borrar</string>
+
+    <string name="description_label">DESCRIPCIÓN</string>
+    <string name="no_description">Sin descripción.</string>
+    <string name="game_label">Juego</string>
+    <string name="format_label">Formato</string>
+    <string name="format_default">Estándar</string>
+    <string name="date_label">Fecha</string>
+    <string name="players_label">Jugadores</string>
+    <string name="players_max">Max</string>
+
+    <string name="no_players_registered">No hay jugadores inscritos.</string>
+    <string name="main_char_label">Main:</string>
+
+    <string name="tournament_not_started">El torneo no ha comenzado.</string>
+    <string name="round_label">RONDA</string>
+    <string name="winner_toast">¡%1$s GANA!</string> <string name="ai_dialog_title">FRAME DATA &amp; STRATEGY</string>
+    <string name="analyze_view_label">ANALIZAR DESDE LA VISTA DE:</string>
+    <string name="consulting_db">Consultando base de datos...</string>
+    <string name="btn_understood">ENTENDIDO</string>
+    <string name="vs_label">VS</string>
+
+    <string name="new_participant_title">Nuevo Participante (%1$s)</string>
+    <string name="gamertag_label">Gamertag</string>
+    <string name="char_main_label">Personaje Main</string>
+    <string name="btn_add_player">AÑADIR</string>
+
+    <string name="config_matches_title">Configurar Partidas</string>
+    <string name="victory_format_label">Formato de victoria:</string>
+    <string name="bo3_label">Best of 3 (Primero a 2)</string>
+    <string name="bo5_label">Best of 5 (Primero a 3)</string>
+    <string name="ft5_label">First to 5 (Primero a 5)</string>
+    <string name="btn_generate_bracket">GENERAR BRACKET</string>
+    <string name="bracket_generated_toast">¡Bracket Generado!</string>
+    <string name="bracket_error_toast">Error al generar bracket.</string>
+
+    <string name="delete_tournament_title">¿Eliminar Torneo?</string>
+    <string name="delete_tournament_msg">Se borrarán todos los datos y partidas.</string>
+    <string name="btn_delete_confirm">ELIMINAR</string>
+
+    <string name="edit_tournament_title">Editar Torneo</string>
+    <string name="name_label">Nombre</string>
+    <string name="max_players_label">Max Jugadores</string>
+    <string name="btn_save">GUARDAR</string>
+
+    <string name="network_sepolia">Red Sepolia</string>
+    <string name="btn_share">COMPARTIR</string>
+    <string name="btn_sell_soon">VENDER (Pronto)</string>
+
+    <string name="ticket_hub_name">TEKKEN HUB</string>
+    <string name="event_iron_fist">IRON FIST 2025</string>
+    <string name="vip_access">VIP ACCESS</string>
+    <string name="asset_holder">ASSET HOLDER</string>
+
+
+    <string name="match_label">MATCH</string>
+    <string name="ai_tips">IA TIPS</string>
+    <string name="cd_ai_icon">Icono de IA</string>
+    <string name="waiting_player">Esperando...</string>
+
+    <string name="back">Volver</string>
+    <string name="exit">Cancelar</string>
 </resources>

@@ -11,6 +11,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext // Necesario
+import androidx.compose.ui.res.stringResource // Necesario
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -30,6 +32,7 @@ fun RegisterScreen(
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current // Contexto para strings en lógica
 
     Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFF121212)) {
         Column(
@@ -37,14 +40,20 @@ fun RegisterScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text("NUEVO LUCHADOR", fontSize = 28.sp, fontWeight = FontWeight.Black, color = Color.White)
+            // TÍTULO
+            Text(
+                text = stringResource(R.string.register_title),
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Black,
+                color = Color.White
+            )
             Spacer(modifier = Modifier.height(32.dp))
 
             // USERNAME
             OutlinedTextField(
                 value = username,
                 onValueChange = { username = it },
-                label = { Text("Nombre de Usuario") },
+                label = { Text(stringResource(R.string.username_label)) },
                 leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color(0xFFD32F2F), unfocusedBorderColor = Color.Gray,
@@ -58,7 +67,7 @@ fun RegisterScreen(
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
-                label = { Text("Correo") },
+                label = { Text(stringResource(R.string.email_simple)) },
                 leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color(0xFFD32F2F), unfocusedBorderColor = Color.Gray,
@@ -72,7 +81,7 @@ fun RegisterScreen(
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text("Contraseña (min 6 chars)") },
+                label = { Text(stringResource(R.string.password_hint_min)) },
                 visualTransformation = PasswordVisualTransformation(),
                 leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
                 colors = OutlinedTextFieldDefaults.colors(
@@ -92,7 +101,8 @@ fun RegisterScreen(
             Button(
                 onClick = {
                     if(password.length < 6) {
-                        errorMessage = "La contraseña debe tener 6 caracteres."
+                        // Usamos context.getString()
+                        errorMessage = context.getString(R.string.error_password_length)
                         return@Button
                     }
                     scope.launch {
@@ -103,7 +113,8 @@ fun RegisterScreen(
                         if (success) {
                             onRegisterSuccess()
                         } else {
-                            errorMessage = "Error al registrar. Revisa el correo o la conexión."
+                            // Usamos context.getString()
+                            errorMessage = context.getString(R.string.register_error)
                         }
                     }
                 },
@@ -112,11 +123,15 @@ fun RegisterScreen(
                 shape = RoundedCornerShape(8.dp),
                 enabled = !isLoading
             ) {
-                if(isLoading) CircularProgressIndicator(color = Color.White) else Text("REGISTRARSE")
+                if(isLoading) CircularProgressIndicator(color = Color.White)
+                else Text(stringResource(R.string.btn_register))
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-            TextButton(onClick = onNavigateBack) { Text("Volver al Login", color = Color.Gray) }
+
+            TextButton(onClick = onNavigateBack) {
+                Text(stringResource(R.string.back_to_login), color = Color.Gray)
+            }
         }
     }
 }

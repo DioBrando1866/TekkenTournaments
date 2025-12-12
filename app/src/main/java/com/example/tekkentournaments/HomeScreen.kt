@@ -7,11 +7,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.TrendingUp
-import androidx.compose.material.icons.filled.Person // Necesario si no carga la foto
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource // <--- IMPORTANTE
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -32,7 +30,6 @@ import com.example.tekkentournaments.clases.Tournament
 import com.example.tekkentournaments.clases.User
 import com.example.tekkentournaments.repositories.TournamentRepository
 import com.example.tekkentournaments.repositories.UserRepository
-import io.github.jan.supabase.postgrest.from
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,20 +37,15 @@ fun HomeScreen(
     onNavigateToList: () -> Unit = {},
     onNavigateToProfile: () -> Unit = {}
 ) {
-    // Estado para el Torneo Destacado y el Usuario actual
     var featuredTournament by remember { mutableStateOf<Tournament?>(null) }
     var currentUser by remember { mutableStateOf<User?>(null) }
     var isLoading by remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
         try {
-            // 1. Cargamos el torneo más reciente
             val tournaments = TournamentRepository.obtenerTorneos()
             featuredTournament = tournaments.firstOrNull()
-
-            // 2. Cargamos QUIÉN es el usuario para saludarle por su nombre
             currentUser = UserRepository.obtenerMiPerfil()
-
             isLoading = false
         } catch (e: Exception) {
             isLoading = false
@@ -64,7 +56,7 @@ fun HomeScreen(
         containerColor = Color(0xFF121212),
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("TEKKEN HUB", fontWeight = FontWeight.Black, letterSpacing = 2.sp) },
+                title = { Text(stringResource(R.string.home_title), fontWeight = FontWeight.Black, letterSpacing = 2.sp) },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = Color(0xFF1E1E1E),
                     titleContentColor = Color(0xFFD32F2F)
@@ -79,8 +71,7 @@ fun HomeScreen(
                 .verticalScroll(rememberScrollState())
         ) {
 
-            // --- 1. NUEVA CABECERA: PLAYER ID CARD ---
-            // Un panel visual que muestra al jugador actual
+            // --- 1. CABECERA: PLAYER ID CARD ---
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -91,17 +82,13 @@ fun HomeScreen(
                         )
                     )
             ) {
-                // Decoración de fondo (Línea roja)
                 Box(modifier = Modifier.fillMaxHeight().width(4.dp).background(Color(0xFFD32F2F)))
 
                 if (currentUser != null) {
                     Row(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(24.dp),
+                        modifier = Modifier.fillMaxSize().padding(24.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Foto de perfil
                         AsyncImage(
                             model = ImageRequest.Builder(LocalContext.current)
                                 .data(currentUser?.profileImage ?: "")
@@ -110,29 +97,24 @@ fun HomeScreen(
                                 .build(),
                             contentDescription = "Avatar",
                             contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .size(80.dp)
-                                .clip(CircleShape)
-                                .background(Color.Gray)
+                            modifier = Modifier.size(80.dp).clip(CircleShape).background(Color.Gray)
                         )
 
                         Spacer(modifier = Modifier.width(20.dp))
 
-                        // Información
                         Column {
                             Text(
-                                text = "READY TO FIGHT,",
+                                text = stringResource(R.string.ready_to_fight),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = Color.Gray,
                                 letterSpacing = 2.sp
                             )
                             Text(
-                                text = currentUser?.username?.uppercase() ?: "LUCHADOR",
+                                text = currentUser?.username?.uppercase() ?: stringResource(R.string.fighter_default),
                                 style = MaterialTheme.typography.headlineMedium,
                                 color = Color.White,
                                 fontWeight = FontWeight.Black
                             )
-                            // El "Lema" o Status del usuario
                             if (!currentUser?.status.isNullOrBlank()) {
                                 Text(
                                     text = "\"${currentUser?.status}\"",
@@ -153,13 +135,13 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // --- 2. SECCIÓN EVENTO DESTACADO (Rediseñada) ---
-            PaddingBox(title = "PRÓXIMO GRAN TORNEO") {
+            // --- 2. EVENTO DESTACADO ---
+            PaddingBox(title = stringResource(R.string.next_tournament_title)) {
                 if (featuredTournament != null) {
                     FeaturedTournamentCard(featuredTournament!!)
                 } else if (!isLoading) {
                     Text(
-                        "No hay torneos activos. ¡Es hora de entrenar!",
+                        stringResource(R.string.no_tournaments_msg),
                         color = Color.Gray,
                         modifier = Modifier.padding(16.dp)
                     )
@@ -168,17 +150,17 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // --- 3. ACCIONES RÁPIDAS (Esto te gustaba, lo mantenemos igual) ---
-            PaddingBox(title = "ACCIONES RÁPIDAS") {
+            // --- 3. ACCIONES RÁPIDAS ---
+            PaddingBox(title = stringResource(R.string.quick_actions)) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     MenuButton(
-                        text = "Explorar Todos los Torneos",
+                        text = stringResource(R.string.explore_tournaments),
                         icon = Icons.Default.TrendingUp,
                         onClick = onNavigateToList
                     )
 
                     MenuButton(
-                        text = "Mi Perfil de Jugador",
+                        text = stringResource(R.string.my_player_profile),
                         icon = Icons.Default.SportsEsports,
                         onClick = onNavigateToProfile
                     )
@@ -190,7 +172,7 @@ fun HomeScreen(
     }
 }
 
-// --- COMPONENTES AUXILIARES ACTUALIZADOS ---
+// --- COMPONENTES AUXILIARES ---
 
 @Composable
 fun PaddingBox(title: String, content: @Composable () -> Unit) {
@@ -211,25 +193,19 @@ fun PaddingBox(title: String, content: @Composable () -> Unit) {
 fun FeaturedTournamentCard(tournament: Tournament) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent), // Transparente para usar gradiente
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         shape = RoundedCornerShape(12.dp)
     ) {
         Box(
-            modifier = Modifier
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(Color(0xFF8B0000), Color(0xFF2C2C2C)) // Degradado Rojo oscuro a Gris
-                    )
-                )
+            modifier = Modifier.background(
+                Brush.verticalGradient(colors = listOf(Color(0xFF8B0000), Color(0xFF2C2C2C)))
+            )
         ) {
             Column(modifier = Modifier.padding(24.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Surface(
-                        color = Color.White,
-                        shape = RoundedCornerShape(4.dp)
-                    ) {
+                    Surface(color = Color.White, shape = RoundedCornerShape(4.dp)) {
                         Text(
-                            "DESTACADO",
+                            stringResource(R.string.featured_label),
                             color = Color.Black,
                             fontWeight = FontWeight.Bold,
                             style = MaterialTheme.typography.labelSmall,
@@ -238,7 +214,7 @@ fun FeaturedTournamentCard(tournament: Tournament) {
                     }
                     Spacer(modifier = Modifier.weight(1f))
                     Text(
-                        text = tournament.date ?: "TBD",
+                        text = tournament.date ?: stringResource(R.string.date_tbd),
                         color = Color.White.copy(alpha = 0.8f),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold
@@ -257,7 +233,7 @@ fun FeaturedTournamentCard(tournament: Tournament) {
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "${tournament.tournamentType} • ${tournament.maxPlayers} PLAZAS",
+                    text = "${tournament.tournamentType} • ${tournament.maxPlayers} ${stringResource(R.string.slots_label)}",
                     color = Color.LightGray,
                     style = MaterialTheme.typography.bodyMedium
                 )
@@ -270,7 +246,7 @@ fun FeaturedTournamentCard(tournament: Tournament) {
 fun MenuButton(text: String, icon: ImageVector, onClick: () -> Unit) {
     Button(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth().height(60.dp), // Un poco más altos
+        modifier = Modifier.fillMaxWidth().height(60.dp),
         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF333333)),
         shape = RoundedCornerShape(12.dp),
         elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
@@ -280,7 +256,7 @@ fun MenuButton(text: String, icon: ImageVector, onClick: () -> Unit) {
             horizontalArrangement = Arrangement.Start,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(imageVector = icon, contentDescription = null, tint = Color(0xFFD32F2F)) // Icono rojo
+            Icon(imageVector = icon, contentDescription = null, tint = Color(0xFFD32F2F))
             Spacer(modifier = Modifier.width(16.dp))
             Text(
                 text = text,

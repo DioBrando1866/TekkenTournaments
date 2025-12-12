@@ -1,10 +1,14 @@
 package com.example.tekkentournaments
 
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
@@ -27,151 +31,127 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.tekkentournaments.clases.User
 
+// Asegúrate de tener estos imports
+import androidx.compose.material.icons.rounded.SportsMma // Icono de guante/lucha
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.res.stringResource
+import com.example.tekkentournaments.utils.CharacterColors // Tu clase de colores
+
 @Composable
-fun TekkenCard(user: User) {
-    // 1. LÓGICA DE RANGO: Calculamos el nivel según las victorias
-    val (rankName, borderColors, glowColor) = when {
-        user.wins >= 50 -> Triple("GOD OF DESTRUCTION", listOf(Color(0xFFFFD700), Color(0xFFFF8C00), Color(0xFFFFD700)), Color(0xFFFFD700)) // Dorado/Fuego
-        user.wins >= 20 -> Triple("TEKKEN EMPEROR", listOf(Color(0xFFE040FB), Color(0xFF7C4DFF)), Color(0xFFE040FB)) // Morado
-        user.wins >= 10 -> Triple("BATTLE RULER", listOf(Color(0xFFFF5252), Color(0xFFD32F2F)), Color(0xFFFF5252)) // Rojo
-        user.wins >= 5 -> Triple("WARRIOR", listOf(Color(0xFF4CAF50), Color(0xFF2E7D32)), Color(0xFF4CAF50)) // Verde
-        else -> Triple("BEGINNER", listOf(Color.Gray, Color.DarkGray), Color.Gray) // Gris
-    }
-
-    // 2. ANIMACIÓN DEL BORDE (Efecto "Holo")
-    val infiniteTransition = rememberInfiniteTransition()
-    val angle by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(3000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        )
-    )
-
-    // 3. DISEÑO DE LA CARTA
+fun TekkenCard(
+    user: User,
+    theme: CharacterColors // <--- NUEVO: Recibimos el tema para colorear la etiqueta
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(220.dp)
-            .padding(16.dp),
+            .height(200.dp), // Un poco más alto para que quepa todo
         shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(10.dp)
+        elevation = CardDefaults.cardElevation(8.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                // Fondo con degradado oscuro
-                .background(Brush.verticalGradient(listOf(Color(0xFF1A1A1A), Color.Black)))
-                // Borde animado (Solo si tiene rango alto, sino estático)
-                .drawBehind {
-                    if (user.wins >= 5) {
-                        // Aquí podrías dibujar un borde complejo rotando con 'angle'
-                        // Para simplificar, usamos un borde degradado estático pero llamativo
-                    }
-                }
-                .border(
-                    width = 4.dp,
-                    brush = Brush.linearGradient(borderColors, tileMode = TileMode.Mirror),
-                    shape = RoundedCornerShape(16.dp)
+        Box(modifier = Modifier.fillMaxSize()) {
+            // IMAGEN DE FONDO (Opcional: podrías poner la foto del personaje aquí con alpha bajo)
+            if (user.profileImage != null) {
+                AsyncImage(
+                    model = user.profileImage,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize().alpha(0.3f) // Muy transparente
                 )
-        ) {
-            // IMAGEN DE FONDO (Opcional: Marca de agua del personaje)
+            } else {
+                Box(modifier = Modifier.fillMaxSize().background(Color.DarkGray))
+            }
 
+            // DEGRADADO SUPERIOR PARA QUE SE LEA EL TEXTO
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.9f)),
+                            startY = 0f,
+                            endY = 400f
+                        )
+                    )
+            )
+
+            // CONTENIDO
             Row(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(20.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.Bottom
             ) {
-                // FOTO DE PERFIL (Izquierda)
+                // 1. AVATAR CIRCULAR
                 Box(
                     modifier = Modifier
-                        .size(100.dp)
-                        .border(2.dp, glowColor, RoundedCornerShape(12.dp))
-                        .clip(RoundedCornerShape(12.dp))
+                        .size(80.dp)
+                        .border(2.dp, theme.primary, CircleShape) // Borde del color del Main
+                        .padding(3.dp)
+                        .clip(CircleShape)
+                        .background(Color.Gray)
                 ) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(user.profileImage ?: "")
-                            .error(android.R.drawable.ic_menu_camera)
-                            .build(),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
+                    if (user.profileImage != null) {
+                        AsyncImage(model = user.profileImage, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                    } else {
+                        Icon(Icons.Default.Person, null, tint = Color.White, modifier = Modifier.align(Alignment.Center))
+                    }
                 }
 
-                Spacer(modifier = Modifier.width(20.dp))
+                Spacer(modifier = Modifier.width(16.dp))
 
-                // INFO DEL JUGADOR (Derecha)
-                Column {
-                    // Rango
-                    Text(
-                        text = rankName,
-                        color = glowColor,
-                        fontWeight = FontWeight.Black,
-                        fontSize = 14.sp,
-                        letterSpacing = 2.sp
-                    )
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    // Nombre
+                // 2. TEXTOS Y ETIQUETA
+                Column(modifier = Modifier.padding(bottom = 4.dp)) {
                     Text(
                         text = user.username.uppercase(),
+                        style = MaterialTheme.typography.headlineSmall,
                         color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 24.sp
+                        fontWeight = FontWeight.Black
                     )
 
-                    // Victorias
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Row(verticalAlignment = Alignment.Bottom) {
-                        Text(
-                            text = "${user.wins}",
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 32.sp
-                        )
-                        Text(
-                            text = " WINS",
-                            color = Color.Gray,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp,
-                            modifier = Modifier.padding(bottom = 6.dp)
-                        )
-                    }
-
-                    // Barra de Progreso al siguiente rango (Visual)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    val nextRankWins = when {
-                        user.wins < 5 -> 5
-                        user.wins < 10 -> 10
-                        user.wins < 20 -> 20
-                        else -> 50
-                    }
-                    val progress = user.wins.toFloat() / nextRankWins.toFloat()
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(6.dp)
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(Color.DarkGray)
+                    // --- NUEVA ETIQUETA DE MAIN ---
+                    Spacer(Modifier.height(8.dp))
+                    Surface(
+                        color = theme.primary.copy(alpha = 0.15f), // Fondo semitransparente del color del tema
+                        shape = RoundedCornerShape(6.dp),
+                        border = BorderStroke(1.dp, theme.primary.copy(alpha = 0.5f))
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth(fraction = progress.coerceIn(0f, 1f))
-                                .fillMaxHeight()
-                                .background(glowColor)
-                        )
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // Icono pequeño de lucha
+                            Icon(
+                                imageVector = Icons.Rounded.SportsMma,
+                                contentDescription = null,
+                                tint = theme.primary,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(Modifier.width(6.dp))
+
+                            // Texto: MAIN: KAZUYA
+                            Text(
+                                text = "${stringResource(R.string.main_character_label)} ${user.characterMain?.uppercase() ?: "RANDOM"}",
+                                color = theme.primary, // Texto del color del tema
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.sp,
+                                letterSpacing = 1.sp
+                            )
+                        }
                     }
+                    // -----------------------------
+
+                    Spacer(Modifier.height(8.dp))
+
+                    // Victorias
                     Text(
-                        text = "Next Rank: $nextRankWins wins",
-                        color = Color.DarkGray,
-                        fontSize = 10.sp,
-                        modifier = Modifier.padding(top = 4.dp)
+                        text = "${stringResource(R.string.wins_label)}: ${user.wins}",
+                        color = Color.LightGray,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
