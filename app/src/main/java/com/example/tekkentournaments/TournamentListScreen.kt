@@ -84,9 +84,7 @@ fun TournamentsListScreen(
         Column(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
 
             if (isLoading) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = Color(0xFFD32F2F))
-                }
+                TekkenLoader()
             } else if (tournaments.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(stringResource(R.string.no_tournaments_list), color = Color.Gray)

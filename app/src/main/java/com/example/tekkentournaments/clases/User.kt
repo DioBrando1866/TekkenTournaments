@@ -22,5 +22,8 @@ data class User(
 
     // 👇 ESTA ES LA LÍNEA NUEVA QUE NECESITAS AÑADIR 👇
     @SerialName("character_main")
-    val characterMain: String? = "Random"
+    val characterMain: String? = "Random",
+
+    @SerialName("banner_image")
+    val bannerImage: String? = null
 )

@@ -10,6 +10,8 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -69,13 +71,16 @@ fun CharacterGridSelector(
 
 @Composable
 fun CharacterItem(name: String, isSelected: Boolean, onClick: () -> Unit) {
-    // LLAMAMOS A LA FUNCIÓN DE LAS URLs
-    val imageUrl = remember(name) { TekkenData.getCharacterImageUrl(name) }
+    // Solo calculamos la URL si NO es Random para ahorrar recursos
+    val imageUrl = remember(name) {
+        if (name.equals("Random", ignoreCase = true)) "" else TekkenData.getCharacterImageUrl(name)
+    }
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.clickable { onClick() }
     ) {
+        // CÍRCULO
         Box(
             modifier = Modifier
                 .size(64.dp)
@@ -88,22 +93,39 @@ fun CharacterItem(name: String, isSelected: Boolean, onClick: () -> Unit) {
                 .clip(CircleShape)
                 .background(if (isSelected) Color(0xFFD32F2F).copy(alpha = 0.2f) else Color.Transparent)
         ) {
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(imageUrl)
-                    .crossfade(true)
-                    // 👇 ESTA LÍNEA ES MÁGICA: Fingimos ser un PC para que no nos bloqueen
-                    .addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
-                    .error(android.R.drawable.ic_menu_camera) // Si falla, sale cámara
-                    .build(),
-                contentDescription = name,
-                contentScale = ContentScale.Crop, // Crop para que llene el círculo
-                modifier = Modifier.fillMaxSize()
-            )
+            // --- AQUÍ ESTÁ EL CAMBIO ---
+            if (name.equals("Random", ignoreCase = true)) {
+                // CASO 1: ES RANDOM -> Ponemos icono nativo
+                Icon(
+                    imageVector = Icons.Default.HelpOutline, // Icono de interrogación
+                    contentDescription = "Random",
+                    // Si está seleccionado se pone rojo, si no, blanco translúcido
+                    tint = if (isSelected) Color(0xFFD32F2F) else Color.White.copy(alpha = 0.7f),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(14.dp) // Padding para que no toque los bordes del círculo
+                )
+            } else {
+                // CASO 2: PERSONAJE NORMAL -> Cargamos la imagen de la URL
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(imageUrl)
+                        .crossfade(true)
+                        // Recuerda el header para que carguen las de Liquipedia
+                        .addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+                        .error(android.R.drawable.ic_menu_camera)
+                        .build(),
+                    contentDescription = name,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+            // ---------------------------
         }
 
         Spacer(modifier = Modifier.height(4.dp))
 
+        // NOMBRE
         Text(
             text = name,
             color = if (isSelected) Color(0xFFD32F2F) else Color.White,

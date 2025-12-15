@@ -134,7 +134,7 @@ fun LoginScreen(
                 enabled = !isLoading
             ) {
                 if (isLoading) {
-                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                    TekkenLoader()
                 } else {
                     Text(stringResource(R.string.btn_login), fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 }

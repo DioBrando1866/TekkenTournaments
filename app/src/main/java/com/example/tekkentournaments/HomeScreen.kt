@@ -127,9 +127,7 @@ fun HomeScreen(
                         }
                     }
                 } else if (isLoading) {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = Color(0xFFD32F2F))
-                    }
+                    TekkenLoader()
                 }
             }
 
