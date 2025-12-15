@@ -101,7 +101,6 @@ fun DrawMatches(
 
         roundMatches.forEachIndexed { index, match ->
             // Lógica simple de posicionamiento vertical (Árbol binario visual)
-            // Cuanto más avanzada la ronda, más espacio vertical entre nodos
             val verticalSpacing = (CARD_HEIGHT.value + ROW_GAP.value) * Math.pow(2.0, (roundNum - 1).toDouble()).toFloat()
             val startOffset = (verticalSpacing / 2) - (CARD_HEIGHT.value / 2) // Centrado inicial
             val yOffset = startOffset + (index * verticalSpacing)
@@ -134,17 +133,14 @@ fun DrawConnections(rounds: Map<Int, List<Match>>) {
 
                 // Dibujamos líneas desde cada partido de esta ronda hacia su "padre" en la siguiente
                 roundMatches.forEachIndexed { index, _ ->
-                    // Coordenada de salida de este partido (lado derecho centro)
                     val startY = currentStartY + (index * currentSpacing)
 
-                    // Coordenada de entrada en la siguiente ronda
-                    // La lógica es: El partido 0 y 1 van al partido 0 de la siguiente ronda
                     val nextRoundIndex = index / 2
                     val nextSpacing = (CARD_HEIGHT.toPx() + ROW_GAP.toPx()) * Math.pow(2.0, roundNum.toDouble()).toFloat()
                     val nextStartY = (nextSpacing / 2)
                     val targetY = nextStartY + (nextRoundIndex * nextSpacing)
 
-                    // Curva Bezier para que quede elegante
+                    // Curva Bezier
                     val path = Path().apply {
                         moveTo(currentX, startY)
                         cubicTo(
@@ -181,11 +177,11 @@ fun BracketMatchCard(match: Match, users: List<User>, onClick: (Match) -> Unit) 
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
         border = BorderStroke(1.dp, borderColor),
-        onClick = { onClick(match) } // Al hacer clic, abrimos el diálogo
+        onClick = { onClick(match) }
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // JUGADOR 1
-            BracketPlayerRow(p1, match.score1, match.winnerId == match.player1Id)
+            // CORREGIDO: Usamos player1Score
+            BracketPlayerRow(p1, match.player1Score, match.winnerId == match.player1Id)
 
             // SEPARADOR + INFO EXTRA (IA / Ronda)
             Row(
@@ -196,7 +192,6 @@ fun BracketMatchCard(match: Match, users: List<User>, onClick: (Match) -> Unit) 
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Icono IA (Solo si no hay ganador aún)
                 if (match.winnerId == null) {
                     Icon(Icons.Rounded.SmartToy, null, tint = Color.Cyan, modifier = Modifier.size(10.dp))
                     Spacer(Modifier.width(4.dp))
@@ -206,8 +201,8 @@ fun BracketMatchCard(match: Match, users: List<User>, onClick: (Match) -> Unit) 
                 }
             }
 
-            // JUGADOR 2
-            BracketPlayerRow(p2, match.score2, match.winnerId == match.player2Id)
+            // CORREGIDO: Usamos player2Score
+            BracketPlayerRow(p2, match.player2Score, match.winnerId == match.player2Id)
         }
     }
 }
@@ -239,7 +234,6 @@ fun ColumnScope.BracketPlayerRow(user: User?, score: Int, isWinner: Boolean) {
             if (charImage != null && charImage.isNotEmpty()) {
                 AsyncImage(model = charImage, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
             } else {
-                // Fallback a foto de perfil si no hay main
                 AsyncImage(model = user?.profileImage, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
             }
         }
@@ -248,7 +242,7 @@ fun ColumnScope.BracketPlayerRow(user: User?, score: Int, isWinner: Boolean) {
 
         // 2. NOMBRE
         Text(
-            text = user?.username ?: "TBD", // To Be Determined
+            text = user?.username ?: "TBD",
             color = if (isWinner) Color(0xFF4CAF50) else Color.White,
             fontSize = 10.sp,
             fontWeight = if (isWinner) FontWeight.Bold else FontWeight.Normal,

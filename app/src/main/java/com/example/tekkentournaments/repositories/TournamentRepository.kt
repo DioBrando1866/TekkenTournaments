@@ -3,18 +3,20 @@ package com.example.tekkentournaments.repositories
 import android.util.Log
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Order
+import io.github.jan.supabase.auth.auth
 
 // Imports de tus clases y cliente supabase
 import com.example.tekkentournaments.clases.Tournament
 import com.example.tekkentournaments.clases.Player
 import com.example.tekkentournaments.clases.Match
 import com.example.tekkentournaments.clases.User
-import io.github.jan.supabase.auth.auth
 import supabase
 
 object TournamentRepository {
 
-    // --- 1. GESTIÓN DE TORNEOS ---
+    // ==========================================
+    // 1. GESTIÓN DE TORNEOS (CRUD)
+    // ==========================================
 
     suspend fun obtenerTorneos(): List<Tournament> {
         return try {
@@ -35,11 +37,11 @@ object TournamentRepository {
                 filter { eq("id", id) }
             }.decodeSingleOrNull<Tournament>()
         } catch (e: Exception) {
+            Log.e("REPO", "Error obtenerTorneoPorId: ${e.message}")
             null
         }
     }
 
-    // ACTUALIZADO: AHORA RECIBE EL JUEGO
     suspend fun crearTorneo(nombre: String, descripcion: String, fecha: String, maxJugadores: Int, tipo: String, juego: String): Boolean {
         return try {
             val currentUser = supabase.auth.currentUserOrNull() ?: return false
@@ -56,16 +58,30 @@ object TournamentRepository {
                 date = fecha,
                 maxPlayers = maxJugadores,
                 tournamentType = tipo,
-                gameVersion = juego, // <--- GUARDAMOS LA VERSIÓN DEL JUEGO
+                gameVersion = juego,
                 creatorId = currentUser.id,
                 creatorName = creatorName,
+                status = "open",
                 isPublic = true
+                // participants eliminado correctamente
             )
 
             supabase.from("tournaments").insert(nuevoTorneo)
             true
         } catch (e: Exception) {
             Log.e("REPO", "Error crearTorneo: ${e.message}")
+            false
+        }
+    }
+
+    suspend fun eliminarTorneo(id: String): Boolean {
+        return try {
+            supabase.from("tournaments").delete {
+                filter { eq("id", id) }
+            }
+            true
+        } catch (e: Exception) {
+            Log.e("REPO", "Error eliminarTorneo: ${e.message}")
             false
         }
     }
@@ -86,20 +102,10 @@ object TournamentRepository {
         }
     }
 
-    suspend fun borrarTorneo(id: String): Boolean {
-        return try {
-            supabase.from("tournaments").delete {
-                filter { eq("id", id) }
-            }
-            true
-        } catch (e: Exception) {
-            false
-        }
-    }
+    // ==========================================
+    // 2. GESTIÓN DE JUGADORES
+    // ==========================================
 
-    // --- 2. GESTIÓN DE JUGADORES ---
-
-    // ESTA ES LA VERSIÓN CORRECTA QUE INCLUYE PERSONAJE
     suspend fun agregarJugador(tournamentId: String, nombre: String, personaje: String): Boolean {
         return try {
             val player = Player(
@@ -111,7 +117,7 @@ object TournamentRepository {
             supabase.from("players").insert(player)
             true
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("REPO", "Error agregarJugador: ${e.message}")
             false
         }
     }
@@ -126,19 +132,23 @@ object TournamentRepository {
         }
     }
 
-    // --- 3. GESTIÓN DE MATCHES Y BRACKET ---
+    // ==========================================
+    // 3. GESTIÓN DE MATCHES Y BRACKET
+    // ==========================================
 
+    // ✅ ESTA ES LA FUNCIÓN QUE FALTABA Y QUE SOLUCIONA EL ERROR
     suspend fun generarBracketInicial(tournamentId: String, formato: Int): Boolean {
         return try {
             val players = obtenerJugadores(tournamentId)
             if (players.size < 2) {
-                Log.e("REPO", "Mínimo 2 jugadores")
+                Log.e("REPO", "Mínimo 2 jugadores para generar bracket")
                 return false
             }
 
             val shuffled = players.shuffled()
             val matches = mutableListOf<Match>()
 
+            // Generamos emparejamientos de la Ronda 1
             for (i in shuffled.indices step 2) {
                 if (i + 1 < shuffled.size) {
                     val p1 = shuffled[i]
@@ -153,14 +163,18 @@ object TournamentRepository {
                             winnerId = null,
                             player1Score = 0,
                             player2Score = 0,
-                            maxScore = formato
+                            maxScore = formato // Se pasa el formato (ej. 3 para BO3)
                         )
                     )
                 }
             }
 
-            matches.forEach { supabase.from("matches").insert(it) }
+            // Insertamos todos los matches en Supabase
+            if (matches.isNotEmpty()) {
+                matches.forEach { supabase.from("matches").insert(it) }
+            }
 
+            // Actualizamos estado del torneo a "en_curso"
             supabase.from("tournaments").update({
                 set("status", "en_curso")
             }) {
@@ -174,50 +188,55 @@ object TournamentRepository {
         }
     }
 
-    suspend fun obtenerMatches(tournamentId: String): List<Match> {
+    suspend fun obtenerPartidosDelTorneo(tournamentId: String): List<Match> {
         return try {
             supabase.from("matches").select {
                 filter { eq("tournament_id", tournamentId) }
                 order("round", Order.ASCENDING)
+                order("id", Order.ASCENDING)
             }.decodeList<Match>()
         } catch (e: Exception) {
+            Log.e("REPO", "Error obtenerPartidosDelTorneo: ${e.message}")
             emptyList()
         }
     }
 
-    // --- 4. ACTUALIZAR RESULTADO Y GAMIFICACIÓN ---
-
-    suspend fun actualizarPartida(match: Match): Boolean {
-        return try {
+    suspend fun actualizarPartido(matchId: String, score1: Int, score2: Int, winnerId: String?) {
+        try {
             supabase.from("matches").update({
-                set("player1_score", match.player1Score)
-                set("player2_score", match.player2Score)
-                set("winner_id", match.winnerId)
+                set("player1_score", score1)
+                set("player2_score", score2)
+                set("winner_id", winnerId)
             }) {
-                filter { eq("id", match.id) }
+                filter { eq("id", matchId) }
             }
 
-            if (match.winnerId != null) {
-                incrementarVictoriaUsuario(match.winnerId)
+            // Gamificación: Si hay ganador, sumamos victoria
+            if (winnerId != null) {
+                incrementarVictoriaUsuario(winnerId)
             }
-
-            true
         } catch (e: Exception) {
-            Log.e("REPO", "Error actualizando match: ${e.message}")
-            false
+            Log.e("REPO", "Error actualizarPartido: ${e.message}")
         }
     }
 
+    // ==========================================
+    // 4. GAMIFICACIÓN INTERNA
+    // ==========================================
+
     private suspend fun incrementarVictoriaUsuario(playerId: String) {
         try {
+            // 1. Buscamos al jugador para obtener su nombre real
             val player = supabase.from("players").select {
                 filter { eq("id", playerId) }
             }.decodeSingleOrNull<Player>() ?: return
 
+            // 2. Buscamos si ese nombre corresponde a un usuario registrado
             val user = supabase.from("users").select {
                 filter { eq("username", player.name) }
             }.decodeSingleOrNull<User>()
 
+            // 3. Si existe, le sumamos +1 Win
             if (user != null) {
                 supabase.from("users").update({
                     set("wins", user.wins + 1)
@@ -226,7 +245,7 @@ object TournamentRepository {
                 }
             }
         } catch (e: Exception) {
-            Log.e("REPO", "No se pudo sumar victoria al usuario: ${e.message}")
+            Log.e("REPO", "No se pudo sumar victoria: ${e.message}")
         }
     }
 }

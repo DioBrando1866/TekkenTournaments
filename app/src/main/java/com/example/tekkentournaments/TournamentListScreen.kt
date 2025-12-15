@@ -5,7 +5,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState // Nuevo import para scroll en dialogo si es necesario
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll // Nuevo import
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
@@ -17,7 +19,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource // <--- IMPORTANTE
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -64,7 +66,6 @@ fun TournamentsListScreen(
                 ),
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        // Reutilizamos "back" que definimos antes
                         Icon(Icons.Default.ArrowBack, stringResource(R.string.back), tint = Color.White)
                     }
                 }
@@ -84,7 +85,10 @@ fun TournamentsListScreen(
         Column(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
 
             if (isLoading) {
-                TekkenLoader()
+                // Asumo que tienes TekkenLoader definido en otro sitio o usas CircularProgressIndicator
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = Color(0xFFD32F2F))
+                }
             } else if (tournaments.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(stringResource(R.string.no_tournaments_list), color = Color.Gray)
@@ -151,7 +155,6 @@ fun TournamentItemCard(tournament: Tournament, onClick: () -> Unit) {
 
                 Surface(color = Color(0xFFD32F2F).copy(alpha = 0.2f), shape = RoundedCornerShape(4.dp)) {
                     Text(
-                        // Lógica para elegir el string correcto según el estado
                         text = if (tournament.status == "en_curso") stringResource(R.string.status_ongoing) else stringResource(R.string.status_open),
                         color = Color(0xFFD32F2F),
                         style = MaterialTheme.typography.labelSmall,
@@ -161,6 +164,9 @@ fun TournamentItemCard(tournament: Tournament, onClick: () -> Unit) {
             }
 
             Spacer(modifier = Modifier.height(4.dp))
+            // Mostramos el TIPO de torneo también en la tarjeta si quieres
+            Text(text = tournament.tournamentType ?: "Estándar", color = Color(0xFF29B6F6), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+
             if (!tournament.description.isNullOrBlank()) {
                 Text(text = tournament.description, color = Color.Gray, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
@@ -209,7 +215,11 @@ fun CreateTournamentDialog(
         containerColor = Color(0xFF1E1E1E),
         title = { Text(stringResource(R.string.new_tournament_dialog_title), color = Color.White, fontWeight = FontWeight.Bold) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Añadimos verticalScroll por si la pantalla es pequeña y el diálogo crece mucho
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.verticalScroll(rememberScrollState())
+            ) {
 
                 // 1. SELECTOR DE JUEGO
                 ExposedDropdownMenuBox(
@@ -246,7 +256,7 @@ fun CreateTournamentDialog(
                     }
                 }
 
-                // 2. RESTO DE CAMPOS
+                // 2. NOMBRE
                 OutlinedTextField(
                     value = name, onValueChange = { name = it },
                     label = { Text(stringResource(R.string.tournament_name_label)) },
@@ -257,15 +267,17 @@ fun CreateTournamentDialog(
                     )
                 )
 
+                // 3. DESCRIPCIÓN
                 OutlinedTextField(
                     value = desc, onValueChange = { desc = it },
-                    label = { Text(stringResource(R.string.description_label)) }, // Reutilizado de otra pantalla
+                    label = { Text(stringResource(R.string.description_label)) },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Color(0xFFD32F2F), unfocusedBorderColor = Color.Gray,
                         focusedTextColor = Color.White, unfocusedTextColor = Color.White, focusedLabelColor = Color(0xFFD32F2F)
                     )
                 )
 
+                // 4. FECHA
                 OutlinedTextField(
                     value = date, onValueChange = { date = it },
                     label = { Text(stringResource(R.string.date_format_label)) },
@@ -277,6 +289,7 @@ fun CreateTournamentDialog(
                     )
                 )
 
+                // 5. SELECTOR DE JUGADORES
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.players_selector_label), color = Color.White)
                     Spacer(modifier = Modifier.width(8.dp))
@@ -295,6 +308,37 @@ fun CreateTournamentDialog(
                         Spacer(modifier = Modifier.width(4.dp))
                     }
                 }
+
+                Divider(color = Color.Gray, modifier = Modifier.padding(vertical = 4.dp))
+
+                // 6. NUEVO: SELECTOR DE TIPO (RADIO BUTTONS)
+                Text("Formato del Torneo:", color = Color.White, fontWeight = FontWeight.Bold)
+
+                // Opción 1: Simple
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.clickable { type = "Eliminación Simple" }
+                ) {
+                    RadioButton(
+                        selected = (type == "Eliminación Simple"),
+                        onClick = { type = "Eliminación Simple" },
+                        colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFD32F2F), unselectedColor = Color.Gray)
+                    )
+                    Text("Eliminación Simple", color = Color.LightGray)
+                }
+
+                // Opción 2: Doble
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.clickable { type = "Doble Eliminación" }
+                ) {
+                    RadioButton(
+                        selected = (type == "Doble Eliminación"),
+                        onClick = { type = "Doble Eliminación" },
+                        colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFD32F2F), unselectedColor = Color.Gray)
+                    )
+                    Text("Doble Eliminación", color = Color.LightGray)
+                }
             }
         },
         confirmButton = {
@@ -311,7 +355,6 @@ fun CreateTournamentDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                // Reutilizamos "exit" o "cancel"
                 Text(stringResource(R.string.exit), color = Color.Gray)
             }
         }

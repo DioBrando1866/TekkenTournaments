@@ -1,7 +1,6 @@
 package com.example.tekkentournaments
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -9,9 +8,8 @@ import androidx.compose.runtime.*
 import com.example.tekkentournaments.ui.theme.TekkenTournamentsTheme
 import com.example.tekkentournaments.utils.LanguageUtils
 
-// 1. AÑADIMOS LA PANTALLA DE DETALLE AL ENUM
 enum class AppScreen {
-    Splash, Login, Register, Home, Profile, TournamentsList, TournamentDetail // <--- NUEVO
+    Splash, Login, Register, Home, Profile, TournamentsList, TournamentDetail
 }
 
 class MainActivity : ComponentActivity() {
@@ -24,7 +22,7 @@ class MainActivity : ComponentActivity() {
             TekkenTournamentsTheme {
                 var currentScreen by remember { mutableStateOf(AppScreen.Splash) }
 
-                // 2. VARIABLE PARA GUARDAR EL ID DEL TORNEO SELECCIONADO
+                // Variable para guardar el ID del torneo seleccionado
                 var selectedTournamentId by remember { mutableStateOf<String?>(null) }
 
                 when (currentScreen) {
@@ -63,28 +61,30 @@ class MainActivity : ComponentActivity() {
                         TournamentsListScreen(
                             onBack = { currentScreen = AppScreen.Home },
                             onTournamentClick = { torneoId ->
-                                // 3. GUARDAMOS EL ID Y CAMBIAMOS DE PANTALLA
                                 selectedTournamentId = torneoId
                                 currentScreen = AppScreen.TournamentDetail
                             }
                         )
                     }
 
-                    // 4. PANTALLA DE DETALLE
+                    // --- AQUÍ ESTABA EL ERROR ---
                     AppScreen.TournamentDetail -> {
                         if (selectedTournamentId != null) {
                             TournamentDetailScreen(
                                 tournamentId = selectedTournamentId!!,
                                 onBack = {
+                                    // Al pulsar atrás, volvemos a la lista
                                     currentScreen = AppScreen.TournamentsList
                                 },
                                 onTournamentDeleted = {
-                                    // Si se borra, volvemos a la lista
+                                    // 👇 ESTO ES LO QUE FALTABA 👇
+                                    // Si el torneo se borra, también volvemos a la lista
                                     currentScreen = AppScreen.TournamentsList
+                                    selectedTournamentId = null // Limpiamos la selección
                                 }
                             )
                         } else {
-                            // Error de seguridad por si el ID es nulo
+                            // Si es null por error, volver a lista
                             currentScreen = AppScreen.TournamentsList
                         }
                     }
