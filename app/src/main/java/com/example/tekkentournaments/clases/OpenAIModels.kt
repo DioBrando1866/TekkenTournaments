@@ -2,7 +2,6 @@ package com.example.tekkentournaments.clases
 
 import kotlinx.serialization.Serializable
 
-// PETICIÓN (Lo que enviamos)
 @Serializable
 data class OpenAIRequest(
     val model: String,
@@ -15,7 +14,6 @@ data class Message(
     val content: String
 )
 
-// RESPUESTA (Lo que recibimos)
 @Serializable
 data class OpenAIResponse(
     val choices: List<Choice>? = null,

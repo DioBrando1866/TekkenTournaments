@@ -18,13 +18,10 @@ import kotlinx.coroutines.withContext
 import java.math.BigDecimal
 import java.math.BigInteger
 
-// --- MODELOS DE DATOS ---
-
 @Serializable
 data class EthRpcRequest(
     val jsonrpc: String = "2.0",
     val method: String,
-    // ✅ CAMBIO CLAVE: Usamos JsonElement para poder enviar tanto ["String"] como [{Objeto}, "String"]
     val params: JsonElement,
     val id: Int = 1
 )
@@ -43,11 +40,8 @@ data class EthRpcError(
     val message: String
 )
 
-// --- SERVICIO ---
-
 object EthereumService {
 
-    // Tu contrato desplegado en Remix
     private const val TICKET_CONTRACT_ADDRESS = "0xd9145CCE52D386f254917e481eB44e9943F39138"
 
     private val RPC_URLS = listOf(
@@ -71,14 +65,12 @@ object EthereumService {
         }
     }
 
-    // --- FUNCIÓN 1: OBTENER SALDO ---
     suspend fun obtenerSaldoEth(walletAddress: String): String {
         return withContext(Dispatchers.IO) {
             if (!walletAddress.startsWith("0x") || walletAddress.length != 42) {
                 return@withContext "Dirección inválida"
             }
 
-            // Construimos los parámetros: ["0x...", "latest"]
             val params = buildJsonArray {
                 add(walletAddress)
                 add("latest")
@@ -101,23 +93,17 @@ object EthereumService {
         }
     }
 
-    // --- FUNCIÓN 2: VERIFICAR ENTRADA NFT (SMART CONTRACT) ---
     suspend fun tieneEntradaNFT(walletAddress: String): Boolean {
         return withContext(Dispatchers.IO) {
             if (walletAddress.length != 42) return@withContext false
 
-            // 1. Selector de la función 'hasTicket(address)'
             val functionSelector = "f6a3d24e"
 
-            // 2. Argumento (Address sin 0x y con relleno de ceros)
             val cleanAddress = walletAddress.removePrefix("0x")
             val paddedAddress = cleanAddress.padStart(64, '0')
 
-            // 3. Data final
             val data = "0x$functionSelector$paddedAddress"
 
-            // 4. Construimos la petición compleja para eth_call
-            // Params: [ { "to": "...", "data": "..." }, "latest" ]
             val params = buildJsonArray {
                 add(buildJsonObject {
                     put("to", TICKET_CONTRACT_ADDRESS)
@@ -128,11 +114,9 @@ object EthereumService {
 
             val request = EthRpcRequest(method = "eth_call", params = params)
 
-            // 5. Ejecutar
             val resultHex = ejecutarLlamadaRpc(request) ?: return@withContext false
 
             try {
-                // Si el resultado es > 0, significa TRUE (tiene entrada)
                 val hasTicket = BigInteger(resultHex.removePrefix("0x"), 16)
                 return@withContext hasTicket > BigInteger.ZERO
             } catch (e: Exception) {
@@ -141,7 +125,6 @@ object EthereumService {
         }
     }
 
-    // --- FUNCIÓN AUXILIAR (La que te faltaba) ---
     private suspend fun ejecutarLlamadaRpc(request: EthRpcRequest): String? {
         for (url in RPC_URLS) {
             try {
@@ -155,7 +138,6 @@ object EthereumService {
                 if (response.status == HttpStatusCode.OK) {
                     val rpcResponse = response.body<EthRpcResponse>()
 
-                    // Chequeo de errores lógicos del nodo
                     if (rpcResponse.error != null) {
                         Log.w("CRYPTO", "Error lógico del nodo: ${rpcResponse.error.message}")
                         continue
@@ -169,6 +151,6 @@ object EthereumService {
                 Log.e("CRYPTO", "Fallo nodo $url: ${e.message}")
             }
         }
-        return null // Si todos fallan
+        return null
     }
 }

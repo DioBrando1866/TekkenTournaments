@@ -13,14 +13,13 @@ data class User(
 
     val bio: String? = null,
 
-    val status: String? = null, // Ej: "Buscando partida", "Offline"
+    val status: String? = null,
 
     val wins: Int = 0,
 
     @SerialName("created_at")
     val createdAt: String? = null,
 
-    // 👇 ESTA ES LA LÍNEA NUEVA QUE NECESITAS AÑADIR 👇
     @SerialName("character_main")
     val characterMain: String? = "Random",
 

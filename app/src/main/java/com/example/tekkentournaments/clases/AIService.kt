@@ -19,18 +19,15 @@ import kotlinx.coroutines.withContext
 
 object AIService {
 
-    // TU CLAVE REAL DE OPENROUTER (sk-or-v1...)
     private const val API_KEY = "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"
 
     private const val URL = "https://openrouter.ai/api/v1/chat/completions"
 
-    // HE REORDENADO LA LISTA: Ponemos primero los modelos más "inteligentes" (70B/R1)
-    // para que la data técnica sea más precisa, aunque tarden 1 segundo más.
     private val FREE_MODELS = listOf(
-        "deepseek/deepseek-r1:free",             // El mejor para razonamiento técnico ahora mismo
-        "meta-llama/llama-3.3-70b-instruct:free", // Muy bueno con datos específicos
-        "qwen/qwen-2.5-vl-72b-instruct:free",    // Modelo gigante con mucho conocimiento
-        "google/gemini-2.0-flash-exp:free",      // Rápido
+        "deepseek/deepseek-r1:free",
+        "meta-llama/llama-3.3-70b-instruct:free",
+        "qwen/qwen-2.5-vl-72b-instruct:free",
+        "google/gemini-2.0-flash-exp:free",
         "google/gemini-2.0-flash-thinking-exp:free"
     )
 
@@ -43,7 +40,7 @@ object AIService {
             })
         }
         install(HttpTimeout) {
-            requestTimeoutMillis = 45000 // Aumentamos tiempo porque DeepSeek piensa más
+            requestTimeoutMillis = 45000
             connectTimeoutMillis = 15000
         }
     }
@@ -51,8 +48,6 @@ object AIService {
     suspend fun obtenerConsejoTactico(miPersonaje: String, rivalPersonaje: String, juego: String = "Tekken"): String {
         return withContext(Dispatchers.IO) {
 
-            // --- PROMPT DE INGENIERÍA PARA TEKKEN ---
-            // Le damos instrucciones muy estrictas sobre cómo hablar
             val promptSystem = """
                 Eres un analista profesional de Frame Data y coach de $juego.
                 Tu objetivo es dar consejos técnicos de alto nivel para torneos.
@@ -81,7 +76,6 @@ object AIService {
                 )
             )
 
-            // --- BUCLE DE INTENTOS ---
             for (modelId in FREE_MODELS) {
                 try {
                     Log.d("AI_DEBUG", "Consultando al experto técnico: $modelId")
@@ -102,7 +96,6 @@ object AIService {
                         var contenido = data.choices?.firstOrNull()?.message?.content
 
                         if (!contenido.isNullOrBlank()) {
-                            // Limpieza extra para DeepSeek (a veces suelta sus pensamientos <think>...</think>)
                             if (contenido.contains("</think>")) {
                                 contenido = contenido.substringAfter("</think>").trim()
                             }

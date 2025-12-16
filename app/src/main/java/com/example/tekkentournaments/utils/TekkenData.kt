@@ -14,7 +14,6 @@ object TekkenData {
         "Tekken Tag 2"
     )
 
-    // Base de datos de personajes por juego
     private val rosters = mapOf(
         "Tekken 8" to listOf("Jin", "Kazuya", "Jun", "Reina", "Victor", "Azucena", "King", "Paul", "Law", "Xiaoyu", "Hwoarang", "Lars", "Alisa", "Claudio", "Shaheen", "Leroy", "Lili", "Asuka", "Bryan", "Yoshimitsu", "Raven", "Dragunov", "Feng", "Leo", "Steve", "Kuma", "Panda", "Zafina", "Lee", "Devil Jin", "Eddy", "Lidia"),
 
@@ -25,21 +24,16 @@ object TekkenData {
         "Tekken Tag 1" to listOf("Jin", "Kazuya", "Heihachi", "Jun", "Michelle", "Kunimitsu", "Angel", "Devil", "Unknown", "Ogre", "True Ogre", "Bruce", "Baek", "Roger", "Alex", "Prototype Jack")
     )
 
-    // Función segura para obtener personajes
     fun getCharacters(game: String): List<String> {
-        // Si no tenemos la lista específica, devolvemos una genérica o la de Tekken 8 por defecto
         val list = rosters[game] ?: rosters["Tekken 8"]!!
         return (list + "Random").sorted()
     }
 
-    // En TekkenData.kt
 
     fun getCharacterImageUrl(charName: String): String {
-        // Limpiamos el nombre para buscarlo fácil (ej: "Jack-8" -> "jack")
         val key = charName.lowercase().replace(" ", "").replace("-", "")
 
         return when {
-            // --- PERSONAJES PRINCIPALES (URLs de Liquipedia) ---
             key.contains("jin") -> "https://liquipedia.net/commons/images/thumb/3/36/T8_Jin_Render.png/437px-T8_Jin_Render.png"
             key.contains("kazuya") -> "https://liquipedia.net/commons/images/thumb/f/f8/T8_Kazuya_Render.png/462px-T8_Kazuya_Render.png"
             key.contains("king") -> "https://liquipedia.net/commons/images/thumb/9/96/T8_King_Render.png/475px-T8_King_Render.png"
@@ -73,12 +67,8 @@ object TekkenData {
             key.contains("reina") -> "https://liquipedia.net/commons/images/thumb/8/86/T8_Reina_Render.png/382px-T8_Reina_Render.png"
             key.contains("eddy") -> "https://liquipedia.net/commons/images/thumb/e/e9/T8_Eddy_Render.png/450px-T8_Eddy_Render.png"
 
-            // Icono especial para Random
             key.contains("random") -> "https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Pok%C3%A9_Ball_icon.svg/1200px-Pok%C3%A9_Ball_icon.svg.png"
 
-            // --- RED DE SEGURIDAD (IMPORTANTE) ---
-            // Si el personaje no está en la lista de arriba, generamos un avatar con sus iniciales.
-            // Así NUNCA sale un error gris feo.
             else -> "https://ui-avatars.com/api/?name=$charName&background=random&color=fff&size=256&bold=true"
         }
     }

@@ -27,7 +27,6 @@ data class Match(
     @SerialName("player2_score")
     val player2Score: Int = 0,
 
-    // --- AQUÍ ESTABA EL ERROR ---
     @SerialName("max_score")
     val maxScore: Int = 3
 )

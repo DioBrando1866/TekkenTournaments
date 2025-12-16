@@ -5,12 +5,11 @@ import androidx.compose.ui.graphics.Color
 data class TekkenRank(
     val title: String,
     val color: Color,
-    val minWins: Int // Mínimo de victorias para tener este rango
+    val minWins: Int
 )
 
 object TekkenRankUtils {
 
-    // Lista oficial de Tekken 8 basada en tu imagen
     private val ranks = listOf(
         // --- TIER 1: BEGINNER / DANS (Plata/Madera) ---
         TekkenRank("BEGINNER", Color(0xFF8D6E63), 0),
@@ -65,21 +64,17 @@ object TekkenRankUtils {
         TekkenRank("GOD OF DESTRUCTION", Color(0xFFFF00CC), 600)
     )
 
-    // Obtener el rango actual
     fun getRankFromWins(wins: Int): TekkenRank {
-        // Busca el último rango donde tus wins sean mayores o iguales al mínimo
         return ranks.lastOrNull { wins >= it.minWins } ?: ranks.first()
     }
 
-    // Obtener el SIGUIENTE rango (para la barra de progreso)
     fun getNextRank(wins: Int): TekkenRank? {
         return ranks.firstOrNull { it.minWins > wins }
     }
 
-    // Calcular progreso (0.0 a 1.0) para la barra de XP
     fun getProgressToNextRank(wins: Int): Float {
         val current = getRankFromWins(wins)
-        val next = getNextRank(wins) ?: return 1f // Si no hay siguiente, estamos al max
+        val next = getNextRank(wins) ?: return 1f
 
         val winsInThisRank = wins - current.minWins
         val winsNeededForNext = next.minWins - current.minWins
