@@ -192,29 +192,58 @@ fun ProfileScreen(
             onDismiss = { showEditDialog = false },
             onSave = { newName, newBio, newStatus, newChar, newImageUri ->
                 scope.launch {
-                    var finalImageUrl: String? = null
-                    // Subida de imagen
+                    // 1. IMPORTANTE: Empezamos con la URL actual para no perderla si no se sube nada nuevo
+                    var finalImageUrl: String? = user!!.profileImage
+
+                    // 2. Si el usuario seleccionó una foto nueva, intentamos subirla
                     if (newImageUri != null) {
                         try {
                             val inputStream = context.contentResolver.openInputStream(newImageUri)
                             val bytes = inputStream?.readBytes()
                             inputStream?.close()
-                            if (bytes != null) finalImageUrl = UserRepository.subirAvatar(user!!.id, bytes)
-                        } catch (e: Exception) { e.printStackTrace() }
+
+                            if (bytes != null) {
+                                val uploadedUrl = UserRepository.subirAvatar(user!!.id, bytes)
+                                // Solo si la subida retorna una URL válida, actualizamos la variable
+                                if (uploadedUrl != null) {
+                                    finalImageUrl = uploadedUrl
+                                }
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                            // Aquí podrías mostrar un Toast: "Error al subir imagen"
+                        }
                     }
 
-                    // Actualización en BD (Incluyendo personaje)
+                    // 3. Actualización en BD
                     UserRepository.actualizarPerfilCompleto(
                         userId = user!!.id,
                         nuevoUsername = newName,
                         nuevoBio = newBio,
                         nuevoStatus = newStatus,
-                        nuevoCharacter = newChar, // Guardamos el personaje seleccionado
+                        nuevoCharacter = newChar,
+                        // Aquí pasamos la nueva URL o la vieja, pero evitamos pasar null accidentalmente
                         nuevaImagenUrl = finalImageUrl
                     )
 
-                    // Recarga
-                    user = UserRepository.obtenerMiPerfil()
+                    // 4. Recarga con "Truco" para romper la Caché (Cache Busting)
+                    val refreshedUser = UserRepository.obtenerMiPerfil()
+
+                    if (refreshedUser != null) {
+                        // Si la URL es la misma (el servidor sobreescribió el archivo), Coil no se entera.
+                        // Añadimos un timestamp (?t=12345) al final para forzar a Coil a descargarla de nuevo.
+                        val currentUrl = refreshedUser.profileImage
+                        if (currentUrl != null) {
+                            val separator = if (currentUrl.contains("?")) "&" else "?"
+                            val urlNoCache = "$currentUrl${separator}t=${System.currentTimeMillis()}"
+
+                            // Asumimos que User es una data class. Usamos copy para actualizar la URL en local
+                            user = refreshedUser.copy(profileImage = urlNoCache)
+                        } else {
+                            user = refreshedUser
+                        }
+                    }
+
                     showEditDialog = false
                 }
             }
@@ -366,7 +395,7 @@ fun EditProfileDialog(
 
                 // 3. SELECTOR DE PERSONAJE VISUAL (GRID)
                 CharacterGridSelector(
-                    gameVersion = "Tekken 8", // Asumimos Tekken 8 para el perfil
+                    gameVersion = "Tekken 8",
                     selectedCharacter = selectedChar,
                     onCharacterSelected = { selectedChar = it }
                 )
