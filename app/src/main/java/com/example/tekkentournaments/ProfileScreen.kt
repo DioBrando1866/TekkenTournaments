@@ -28,6 +28,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import kotlinx.coroutines.launch
+import android.media.MediaPlayer
+import android.content.Context
+import android.view.HapticFeedbackConstants
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 
 // --- TUS IMPORTS ---
 import com.example.tekkentournaments.clases.User
@@ -357,6 +362,7 @@ fun EditProfileDialog(
     var status by remember { mutableStateOf(currentStatus) }
     var selectedChar by remember { mutableStateOf(currentCharMain ?: "Random") }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    val haptic = LocalHapticFeedback.current
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
@@ -402,8 +408,12 @@ fun EditProfileDialog(
             }
         },
         confirmButton = {
+            val context = LocalContext.current
             Button(
-                onClick = { onSave(username, bio, status, selectedChar, selectedImageUri) },
+                onClick = {
+                    playExcellentSound(context)
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onSave(username, bio, status, selectedChar, selectedImageUri) },
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
             ) { Text(stringResource(R.string.btn_save)) }
         },
@@ -411,4 +421,10 @@ fun EditProfileDialog(
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.exit), color = Color.Gray) }
         }
     )
+}
+
+fun playExcellentSound(context: Context) {
+    val mp = MediaPlayer.create(context, R.raw.excellent)
+    mp.setOnCompletionListener { it.release() }
+    mp.start()
 }

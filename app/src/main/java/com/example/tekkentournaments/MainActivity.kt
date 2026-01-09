@@ -9,7 +9,7 @@ import com.example.tekkentournaments.ui.theme.TekkenTournamentsTheme
 import com.example.tekkentournaments.utils.LanguageUtils
 
 enum class AppScreen {
-    Splash, Login, Register, Home, Profile, TournamentsList, TournamentDetail
+    Splash, Login, Register, Home, Profile, TournamentsList, TournamentDetail, FrameData
 }
 
 class MainActivity : ComponentActivity() {
@@ -48,7 +48,8 @@ class MainActivity : ComponentActivity() {
                     AppScreen.Home -> {
                         HomeScreen(
                             onNavigateToList = { currentScreen = AppScreen.TournamentsList },
-                            onNavigateToProfile = { currentScreen = AppScreen.Profile }
+                            onNavigateToProfile = { currentScreen = AppScreen.Profile },
+                            onNavigateToFrameData = { currentScreen = AppScreen.FrameData }
                         )
                     }
                     AppScreen.Profile -> {
@@ -87,6 +88,11 @@ class MainActivity : ComponentActivity() {
                             // Si es null por error, volver a lista
                             currentScreen = AppScreen.TournamentsList
                         }
+                    }
+                    AppScreen.FrameData -> {
+                        FrameDataScreen(
+                            onBack = { currentScreen = AppScreen.Home }
+                        )
                     }
                 }
             }

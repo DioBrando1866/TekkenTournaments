@@ -7,6 +7,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.QueryStats
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.*
@@ -35,7 +38,8 @@ import com.example.tekkentournaments.repositories.UserRepository
 @Composable
 fun HomeScreen(
     onNavigateToList: () -> Unit = {},
-    onNavigateToProfile: () -> Unit = {}
+    onNavigateToProfile: () -> Unit = {},
+    onNavigateToFrameData: () -> Unit = {}
 ) {
     var featuredTournament by remember { mutableStateOf<Tournament?>(null) }
     var currentUser by remember { mutableStateOf<User?>(null) }
@@ -155,6 +159,13 @@ fun HomeScreen(
                         text = stringResource(R.string.explore_tournaments),
                         icon = Icons.Default.TrendingUp,
                         onClick = onNavigateToList
+                    )
+
+                    // --- NUEVO BOTÓN DE FRAME DATA ---
+                    MenuButton(
+                        text = "FRAME DATA",
+                        icon = Icons.Default.QueryStats,
+                        onClick = onNavigateToFrameData
                     )
 
                     MenuButton(
