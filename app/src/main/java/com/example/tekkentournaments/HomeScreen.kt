@@ -163,7 +163,7 @@ fun HomeScreen(
 
                     // --- NUEVO BOTÓN DE FRAME DATA ---
                     MenuButton(
-                        text = "FRAME DATA",
+                        text = "Frame Data",
                         icon = Icons.Default.QueryStats,
                         onClick = onNavigateToFrameData
                     )

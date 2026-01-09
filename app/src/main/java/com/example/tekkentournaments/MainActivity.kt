@@ -68,18 +68,14 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
-                    // --- AQUÍ ESTABA EL ERROR ---
                     AppScreen.TournamentDetail -> {
                         if (selectedTournamentId != null) {
                             TournamentDetailScreen(
                                 tournamentId = selectedTournamentId!!,
                                 onBack = {
-                                    // Al pulsar atrás, volvemos a la lista
                                     currentScreen = AppScreen.TournamentsList
                                 },
                                 onTournamentDeleted = {
-                                    // 👇 ESTO ES LO QUE FALTABA 👇
-                                    // Si el torneo se borra, también volvemos a la lista
                                     currentScreen = AppScreen.TournamentsList
                                     selectedTournamentId = null // Limpiamos la selección
                                 }
