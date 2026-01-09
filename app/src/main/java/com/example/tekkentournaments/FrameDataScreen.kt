@@ -6,12 +6,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -37,7 +36,7 @@ import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
 
-// --- 1. MODELOS ---
+// --- 1. MODELOS ACTUALIZADOS ---
 data class TekkenDocsResponse(
     val character: String?,
     val moves: List<TekkenMove>?
@@ -48,10 +47,13 @@ data class TekkenMove(
     val command: String?,
     val startup: String?,
     val block: String?,
-    val hit: String?
+    val hit: String?,
+    // Propiedades extra (basadas en lo que suele devolver la API o para futura expansión)
+    val counterHit: String? = null,
+    val notes: String? = null
 )
 
-// --- 2. RETROFIT SERVICE ---
+// --- 2. SERVICIO DE RED ---
 interface TekkenApiService {
     @GET("api/t8/{characterName}/framedata")
     suspend fun getCharacterFrameData(@Path("characterName") name: String): TekkenDocsResponse
@@ -93,7 +95,7 @@ object RetrofitClient {
     }
 }
 
-// --- 3. SCREEN ---
+// --- 3. PANTALLA PRINCIPAL ---
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FrameDataScreen(onBack: () -> Unit) {
@@ -104,7 +106,6 @@ fun FrameDataScreen(onBack: () -> Unit) {
     var selectedName by remember { mutableStateOf("") }
     var isDownloading by remember { mutableStateOf(false) }
 
-    // Lista actualizada con Heihachi y Lidia
     val characters = listOf(
         "Alisa", "Anna", "Armor King", "Asuka", "Bryan", "Claudio", "Clive", "Dragunov",
         "Fahkumram", "Feng", "Heihachi", "Hwoarang", "Jack-8", "Jin", "Jun", "Kazuya",
@@ -113,10 +114,11 @@ fun FrameDataScreen(onBack: () -> Unit) {
         "Yoshimitsu", "Zafina"
     )
 
-    // Slugs especiales para asegurar que la API responda
     val specialSlugs = mapOf(
         "Armor King" to "armor-king",
         "Jack-8" to "jack-8",
+        "Lidia" to "lidia-sobieska",
+        "Heihachi" to "heihachi-mishima"
     )
 
     Scaffold(
@@ -148,16 +150,13 @@ fun FrameDataScreen(onBack: () -> Unit) {
                     )
                 }
 
-                Box(
-                    modifier = Modifier.fillMaxWidth().height(4.dp).background(
-                        Brush.horizontalGradient(colors = listOf(Color(0xFFD32F2F), Color(0xFF1E1E1E)))
-                    )
-                )
+                Box(modifier = Modifier.fillMaxWidth().height(4.dp).background(
+                    Brush.horizontalGradient(colors = listOf(Color(0xFFD32F2F), Color(0xFF1E1E1E)))
+                ))
             }
         }
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
-
             val filteredCharacters = characters.filter { it.contains(searchQuery, ignoreCase = true) }
 
             LazyColumn(
@@ -177,7 +176,6 @@ fun FrameDataScreen(onBack: () -> Unit) {
                                     selectedCharacterMoves = response.moves
                                 }
                             } catch (e: Exception) {
-                                Log.e("TEKKEN_API", "Error: ${e.message}")
                                 Toast.makeText(context, "Error de red", Toast.LENGTH_SHORT).show()
                             } finally {
                                 isDownloading = false
@@ -214,7 +212,7 @@ fun CharacterItem(name: String, onClick: () -> Unit) {
         Row(modifier = Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(name.uppercase(), color = Color.White, fontWeight = FontWeight.Bold)
             Spacer(Modifier.weight(1f))
-            Text("VER DETALLES", color = Color(0xFFD32F2F), fontSize = 10.sp, fontWeight = FontWeight.Black)
+            Text("DETALLES", color = Color(0xFFD32F2F), fontSize = 10.sp, fontWeight = FontWeight.Black)
         }
     }
 }
@@ -223,22 +221,34 @@ fun CharacterItem(name: String, onClick: () -> Unit) {
 @Composable
 fun MovesDetailDialog(characterName: String, moves: List<TekkenMove>, onDismiss: () -> Unit) {
     var moveFilter by remember { mutableStateOf("") }
+    var activeTagFilter by remember { mutableStateOf("TODOS") }
 
-    // Filtrar movimientos por comando o nombre
-    val filteredMoves = remember(moveFilter, moves) {
-        moves.filter {
-            (it.command?.contains(moveFilter, ignoreCase = true) ?: false) ||
-                    (it.name?.contains(moveFilter, ignoreCase = true) ?: false)
+    // Lógica de Filtrado Avanzada
+    val filteredMoves = remember(moveFilter, activeTagFilter, moves) {
+        moves.filter { move ->
+            val matchesText = (move.command?.contains(moveFilter, ignoreCase = true) ?: false) ||
+                    (move.name?.contains(moveFilter, ignoreCase = true) ?: false)
+
+            val matchesTag = when(activeTagFilter) {
+                "SAFE" -> {
+                    val blockValue = move.block?.filter { it.isDigit() || it == '-' || it == '+' }?.toIntOrNull()
+                    blockValue != null && blockValue >= -9
+                }
+                "LAUNCH" -> move.hit?.contains("Launch", ignoreCase = true) == true ||
+                        move.hit?.contains("KND", ignoreCase = true) == true
+                "PLUS" -> move.block?.startsWith("+") == true
+                else -> true
+            }
+            matchesText && matchesTag
         }
     }
 
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFF121212)) {
             Column {
-                // Cabecera fija del diálogo
                 Column(modifier = Modifier.background(Color(0xFF1E1E1E))) {
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
@@ -246,14 +256,14 @@ fun MovesDetailDialog(characterName: String, moves: List<TekkenMove>, onDismiss:
                         IconButton(onClick = onDismiss) { Icon(Icons.Default.Close, null, tint = Color.White) }
                     }
 
-                    // --- BUSCADOR SECUNDARIO DE MOVIMIENTOS ---
-                    Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+                    // Buscador
+                    Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
                         TextField(
                             value = moveFilter,
                             onValueChange = { moveFilter = it },
                             modifier = Modifier.fillMaxWidth(),
-                            placeholder = { Text("Filtrar comando (ej: f+4)...", color = Color.Gray, fontSize = 14.sp) },
-                            leadingIcon = { Icon(Icons.Default.Search, null, tint = Color.Gray, modifier = Modifier.size(18.dp)) },
+                            placeholder = { Text("Filtrar por comando o nombre...", color = Color.Gray, fontSize = 14.sp) },
+                            leadingIcon = { Icon(Icons.Default.Search, null, tint = Color.Gray) },
                             singleLine = true,
                             shape = RoundedCornerShape(8.dp),
                             colors = TextFieldDefaults.colors(
@@ -266,13 +276,33 @@ fun MovesDetailDialog(characterName: String, moves: List<TekkenMove>, onDismiss:
                             )
                         )
                     }
+
+                    // --- IDEA 2: FILTROS RÁPIDOS (CHIPS) ---
+                    LazyRow(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        val tags = listOf("TODOS", "SAFE", "LAUNCH", "PLUS")
+                        items(tags) { tag ->
+                            FilterChip(
+                                selected = activeTagFilter == tag,
+                                onClick = { activeTagFilter = tag },
+                                label = { Text(tag, fontSize = 10.sp) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = Color(0xFFD32F2F),
+                                    selectedLabelColor = Color.White,
+                                    labelColor = Color.Gray,
+                                    containerColor = Color(0xFF252525)
+                                )
+                            )
+                        }
+                    }
                     Divider(color = Color(0xFFD32F2F), thickness = 2.dp)
                 }
 
-                // Lista de movimientos filtrada
                 LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp)) {
                     items(filteredMoves) { move ->
-                        MoveRow(move)
+                        MoveRowEnhanced(move)
                         HorizontalDivider(color = Color(0xFF333333), thickness = 0.5.dp)
                     }
                 }
@@ -281,10 +311,22 @@ fun MovesDetailDialog(characterName: String, moves: List<TekkenMove>, onDismiss:
     }
 }
 
+// --- IDEA 1: PROPIEDADES Y ETIQUETAS VISUALES ---
 @Composable
-fun MoveRow(move: TekkenMove) {
+fun MoveRowEnhanced(move: TekkenMove) {
     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp)) {
-        Text(move.name ?: "Move", color = Color.Gray, fontSize = 11.sp)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(move.name ?: "Move", color = Color.Gray, fontSize = 11.sp, modifier = Modifier.weight(1f))
+
+            // Etiquetas automáticas basadas en datos
+            if (move.hit?.contains("Launch", ignoreCase = true) == true) {
+                PropertyTag("LAUNCH", Color(0xFFD32F2F))
+            }
+            if (move.block?.startsWith("+") == true) {
+                PropertyTag("PLUS", Color.Green)
+            }
+        }
+
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(move.command ?: "???", color = Color.White, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
             Row {
@@ -297,6 +339,23 @@ fun MoveRow(move: TekkenMove) {
                 FrameVal("BLOCK", b, bCol)
             }
         }
+    }
+}
+
+@Composable
+fun PropertyTag(text: String, color: Color) {
+    Surface(
+        color = color.copy(alpha = 0.2f),
+        shape = RoundedCornerShape(4.dp),
+        modifier = Modifier.padding(start = 4.dp)
+    ) {
+        Text(
+            text = text,
+            color = color,
+            fontSize = 8.sp,
+            fontWeight = FontWeight.Black,
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+        )
     }
 }
 
