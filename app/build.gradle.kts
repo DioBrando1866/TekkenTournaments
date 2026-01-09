@@ -84,7 +84,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
 
-    // ❌ HEMOS BORRADO LA LIBRERÍA DE GEMINI Y EL BLOQUE "FORCE" ❌
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
     // --- TESTING ---
     implementation(libs.androidx.compose.animation.core.lint)
