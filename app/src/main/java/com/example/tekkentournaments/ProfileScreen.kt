@@ -33,16 +33,14 @@ import android.content.Context
 import android.view.HapticFeedbackConstants
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
-
-// --- TUS IMPORTS ---
 import com.example.tekkentournaments.clases.User
 import com.example.tekkentournaments.repositories.UserRepository
 import com.example.tekkentournaments.repositories.AuthRepository
 import com.example.tekkentournaments.clases.EthereumService
 import com.example.tekkentournaments.utils.LanguageUtils
-import com.example.tekkentournaments.utils.ThemeUtils // <--- Para los colores
-import com.example.tekkentournaments.utils.CharacterColors // Data class de colores
-import com.example.tekkentournaments.CharacterGridSelector // <--- El grid nuevo
+import com.example.tekkentournaments.utils.ThemeUtils
+import com.example.tekkentournaments.utils.CharacterColors
+import com.example.tekkentournaments.CharacterGridSelector
 import com.example.tekkentournaments.ui.components.TekkenCard
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -51,7 +49,6 @@ fun ProfileScreen(
     onLogout: () -> Unit,
     onBack: () -> Unit
 ) {
-    // --- ESTADOS ---
     var showTicketsScreen by remember { mutableStateOf(false) }
     var walletAddress by remember { mutableStateOf("") }
     var user by remember { mutableStateOf<User?>(null) }
@@ -62,20 +59,16 @@ fun ProfileScreen(
     val context = LocalContext.current
     val scrollState = rememberScrollState()
 
-    // --- CARGA DE DATOS ---
     LaunchedEffect(Unit) {
         isLoading = true
         user = UserRepository.obtenerMiPerfil()
         isLoading = false
     }
 
-    // --- TEMA DINÁMICO ---
-    // Calculamos los colores basándonos en el personaje del usuario
     val theme = remember(user?.characterMain) {
         ThemeUtils.getColorsForCharacter(user?.characterMain)
     }
 
-    // --- NAVEGACIÓN INTERNA ---
     if (showTicketsScreen) {
         MyTicketsScreen(
             walletAddress = walletAddress,
@@ -83,7 +76,7 @@ fun ProfileScreen(
         )
     } else {
         Scaffold(
-            containerColor = theme.background, // 1. FONDO DINÁMICO
+            containerColor = theme.background,
             topBar = {
                 CenterAlignedTopAppBar(
                     title = {
@@ -91,7 +84,7 @@ fun ProfileScreen(
                             stringResource(R.string.profile_title),
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 2.sp,
-                            color = theme.primary // 2. COLOR TÍTULO
+                            color = theme.primary
                         )
                     },
                     colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -103,7 +96,6 @@ fun ProfileScreen(
                         }
                     },
                     actions = {
-                        // Botón Idioma
                         IconButton(onClick = {
                             val current = LanguageUtils.getCurrentLanguage(context)
                             val newLang = if (current == "es") "en" else "es"
@@ -116,7 +108,6 @@ fun ProfileScreen(
                             )
                         }
 
-                        // Botón Salir
                         IconButton(onClick = { scope.launch { AuthRepository.logout(); onLogout() } }) {
                             Icon(Icons.Default.ExitToApp, stringResource(R.string.btn_logout), tint = Color(0xFFD32F2F))
                         }
@@ -139,13 +130,11 @@ fun ProfileScreen(
                 ) {
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    // 1. TEKKEN CARD (Pasamos el usuario)
                     TekkenCard(user = user!!, theme = theme)
-                    // 2. BIOGRAFÍA
                     Spacer(modifier = Modifier.height(24.dp))
                     Card(
                         colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
-                        border = BorderStroke(1.dp, theme.secondary.copy(alpha = 0.3f)), // Borde sutil del color del tema
+                        border = BorderStroke(1.dp, theme.secondary.copy(alpha = 0.3f)),
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
@@ -156,19 +145,15 @@ fun ProfileScreen(
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))
-
-                    // 3. SECCIÓN CRYPTO (WEB3)
-                    // Le pasamos el tema para que pinte los iconos del color correcto
                     CryptoSection(
                         currentWallet = walletAddress,
-                        theme = theme, // <--- Pasamos el tema
+                        theme = theme,
                         onWalletChange = { walletAddress = it },
                         onOpenTickets = { showTicketsScreen = true }
                     )
 
                     Spacer(modifier = Modifier.height(32.dp))
 
-                    // 4. BOTÓN EDITAR (Color del tema)
                     Button(
                         onClick = { showEditDialog = true },
                         modifier = Modifier.fillMaxWidth().height(50.dp),
@@ -186,21 +171,18 @@ fun ProfileScreen(
         }
     }
 
-    // --- DIÁLOGO EDITAR PERFIL (Actualizado) ---
     if (showEditDialog && user != null) {
         EditProfileDialog(
             currentUsername = user!!.username,
             currentBio = user!!.bio ?: "",
             currentStatus = user!!.status ?: "",
             currentImageUrl = user!!.profileImage,
-            currentCharMain = user!!.characterMain, // Pasamos el Main actual
+            currentCharMain = user!!.characterMain,
             onDismiss = { showEditDialog = false },
             onSave = { newName, newBio, newStatus, newChar, newImageUri ->
                 scope.launch {
-                    // 1. IMPORTANTE: Empezamos con la URL actual para no perderla si no se sube nada nuevo
                     var finalImageUrl: String? = user!!.profileImage
 
-                    // 2. Si el usuario seleccionó una foto nueva, intentamos subirla
                     if (newImageUri != null) {
                         try {
                             val inputStream = context.contentResolver.openInputStream(newImageUri)
@@ -209,40 +191,31 @@ fun ProfileScreen(
 
                             if (bytes != null) {
                                 val uploadedUrl = UserRepository.subirAvatar(user!!.id, bytes)
-                                // Solo si la subida retorna una URL válida, actualizamos la variable
                                 if (uploadedUrl != null) {
                                     finalImageUrl = uploadedUrl
                                 }
                             }
                         } catch (e: Exception) {
                             e.printStackTrace()
-                            // Aquí podrías mostrar un Toast: "Error al subir imagen"
                         }
                     }
 
-                    // 3. Actualización en BD
                     UserRepository.actualizarPerfilCompleto(
                         userId = user!!.id,
                         nuevoUsername = newName,
                         nuevoBio = newBio,
                         nuevoStatus = newStatus,
                         nuevoCharacter = newChar,
-                        // Aquí pasamos la nueva URL o la vieja, pero evitamos pasar null accidentalmente
                         nuevaImagenUrl = finalImageUrl
                     )
 
-                    // 4. Recarga con "Truco" para romper la Caché (Cache Busting)
                     val refreshedUser = UserRepository.obtenerMiPerfil()
 
                     if (refreshedUser != null) {
-                        // Si la URL es la misma (el servidor sobreescribió el archivo), Coil no se entera.
-                        // Añadimos un timestamp (?t=12345) al final para forzar a Coil a descargarla de nuevo.
                         val currentUrl = refreshedUser.profileImage
                         if (currentUrl != null) {
                             val separator = if (currentUrl.contains("?")) "&" else "?"
                             val urlNoCache = "$currentUrl${separator}t=${System.currentTimeMillis()}"
-
-                            // Asumimos que User es una data class. Usamos copy para actualizar la URL en local
                             user = refreshedUser.copy(profileImage = urlNoCache)
                         } else {
                             user = refreshedUser
@@ -256,13 +229,10 @@ fun ProfileScreen(
     }
 }
 
-// ==========================================
-// COMPONENTE CRYPTO (ADAPTADO AL TEMA)
-// ==========================================
 @Composable
 fun CryptoSection(
     currentWallet: String,
-    theme: CharacterColors, // Recibe los colores
+    theme: CharacterColors,
     onWalletChange: (String) -> Unit,
     onOpenTickets: () -> Unit
 ) {
@@ -272,7 +242,7 @@ fun CryptoSection(
 
     Card(
         colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
-        border = BorderStroke(1.dp, theme.primary), // Borde del color del personaje
+        border = BorderStroke(1.dp, theme.primary),
         modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -324,7 +294,7 @@ fun CryptoSection(
 
                 Button(
                     onClick = onOpenTickets,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)), // Tickets siempre dorado
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)),
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(8.dp)
                 ) {
@@ -344,9 +314,6 @@ fun CryptoSection(
     }
 }
 
-// ==========================================
-// DIÁLOGO EDICIÓN (CON GRID SELECTOR)
-// ==========================================
 @Composable
 fun EditProfileDialog(
     currentUsername: String,
@@ -355,7 +322,7 @@ fun EditProfileDialog(
     currentImageUrl: String?,
     currentCharMain: String?,
     onDismiss: () -> Unit,
-    onSave: (String, String, String, String, Uri?) -> Unit // Devuelve también el char
+    onSave: (String, String, String, String, Uri?) -> Unit
 ) {
     var username by remember { mutableStateOf(currentUsername) }
     var bio by remember { mutableStateOf(currentBio) }
@@ -374,12 +341,10 @@ fun EditProfileDialog(
         containerColor = Color(0xFF1E1E1E),
         title = { Text(stringResource(R.string.edit_profile), color = Color.White) },
         text = {
-            // Scroll necesario porque el Grid ocupa espacio
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.verticalScroll(rememberScrollState())
             ) {
-                // 1. FOTO
                 Box(
                     modifier = Modifier.size(100.dp).clip(CircleShape).background(Color.Gray).clickable {
                         photoPickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
@@ -392,14 +357,12 @@ fun EditProfileDialog(
                 }
                 Spacer(Modifier.height(16.dp))
 
-                // 2. CAMPOS
                 OutlinedTextField(value = username, onValueChange = { username = it }, label = { Text("Nombre") }, colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White))
                 OutlinedTextField(value = status, onValueChange = { status = it }, label = { Text("Lema") }, colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White))
                 OutlinedTextField(value = bio, onValueChange = { bio = it }, label = { Text("Bio") }, colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White))
 
                 Spacer(Modifier.height(16.dp))
 
-                // 3. SELECTOR DE PERSONAJE VISUAL (GRID)
                 CharacterGridSelector(
                     gameVersion = "Tekken 8",
                     selectedCharacter = selectedChar,

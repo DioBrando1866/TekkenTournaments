@@ -23,17 +23,13 @@ import kotlinx.coroutines.delay
 fun SplashScreen(
     onSessionCheckFinished: (Boolean) -> Unit
 ) {
-    // Comprobamos la sesión nada más cargar esta pantalla
     LaunchedEffect(Unit) {
-        // Pequeño delay estético (opcional) para que se vea el logo al menos 0.5s
-        // y no sea un parpadeo feo si el móvil es muy rápido.
         delay(500)
 
         val haySesion = AuthRepository.recuperarSesion()
         onSessionCheckFinished(haySesion)
     }
 
-    // Diseño de la pantalla de carga (Estilo Tekken)
     Box(
         modifier = Modifier
             .fillMaxSize()

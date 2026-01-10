@@ -29,11 +29,10 @@ import com.example.tekkentournaments.clases.Match
 import com.example.tekkentournaments.clases.User
 import com.example.tekkentournaments.utils.TekkenData
 
-// CONFIGURACIÓN VISUAL
 private val CARD_WIDTH = 220.dp
 private val CARD_HEIGHT = 90.dp
-private val COLUMN_GAP = 80.dp // Espacio horizontal entre rondas
-private val ROW_GAP = 20.dp    // Espacio vertical entre partidos
+private val COLUMN_GAP = 80.dp
+private val ROW_GAP = 20.dp
 
 @Composable
 fun TournamentBracket(
@@ -41,11 +40,9 @@ fun TournamentBracket(
     users: List<User>,
     onMatchClick: (Match) -> Unit
 ) {
-    // ESTADOS PARA EL ZOOM Y PAN (MOVIMIENTO)
     var scale by remember { mutableStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
 
-    // Organizar partidos por rondas (Round 1, Round 2, Final...)
     val rounds = remember(matches) { matches.groupBy { it.round }.toSortedMap() }
 
     Box(
@@ -59,7 +56,6 @@ fun TournamentBracket(
                 }
             }
     ) {
-        // LIENZO APLICANDO LAS TRANSFORMACIONES
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -71,14 +67,13 @@ fun TournamentBracket(
                 )
         ) {
             if (rounds.isNotEmpty()) {
-                DrawConnections(rounds) // 1. Dibujamos las líneas primero (al fondo)
-                DrawMatches(rounds, users, onMatchClick) // 2. Dibujamos las tarjetas encima
+                DrawConnections(rounds)
+                DrawMatches(rounds, users, onMatchClick)
             } else {
                 Text("No hay partidos generados", color = Color.Gray, modifier = Modifier.align(Alignment.Center))
             }
         }
 
-        // Botón para resetear vista (útil si te pierdes haciendo zoom)
         FloatingActionButton(
             onClick = { scale = 1f; offset = Offset.Zero },
             modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
@@ -95,17 +90,14 @@ fun DrawMatches(
     users: List<User>,
     onMatchClick: (Match) -> Unit
 ) {
-    // Iteramos por columnas (Rondas)
     rounds.forEach { (roundNum, roundMatches) ->
-        val xOffset = (roundNum - 1) * (CARD_WIDTH.value + COLUMN_GAP.value) // Posición X
+        val xOffset = (roundNum - 1) * (CARD_WIDTH.value + COLUMN_GAP.value)
 
         roundMatches.forEachIndexed { index, match ->
-            // Lógica simple de posicionamiento vertical (Árbol binario visual)
             val verticalSpacing = (CARD_HEIGHT.value + ROW_GAP.value) * Math.pow(2.0, (roundNum - 1).toDouble()).toFloat()
-            val startOffset = (verticalSpacing / 2) - (CARD_HEIGHT.value / 2) // Centrado inicial
+            val startOffset = (verticalSpacing / 2) - (CARD_HEIGHT.value / 2)
             val yOffset = startOffset + (index * verticalSpacing)
 
-            // DIBUJAR TARJETA EN POSICIÓN ABSOLUTA
             Box(
                 modifier = Modifier
                     .offset(x = xOffset.dp, y = yOffset.dp)
@@ -122,7 +114,6 @@ fun DrawMatches(
 fun DrawConnections(rounds: Map<Int, List<Match>>) {
     Canvas(modifier = Modifier.fillMaxSize()) {
         rounds.forEach { (roundNum, roundMatches) ->
-            // No dibujamos líneas desde la última ronda (Final)
             if (roundNum < rounds.keys.maxOrNull()!!) {
 
                 val currentX = (roundNum - 1) * (CARD_WIDTH.toPx() + COLUMN_GAP.toPx()) + CARD_WIDTH.toPx()
@@ -131,7 +122,6 @@ fun DrawConnections(rounds: Map<Int, List<Match>>) {
                 val currentSpacing = (CARD_HEIGHT.toPx() + ROW_GAP.toPx()) * Math.pow(2.0, (roundNum - 1).toDouble()).toFloat()
                 val currentStartY = (currentSpacing / 2)
 
-                // Dibujamos líneas desde cada partido de esta ronda hacia su "padre" en la siguiente
                 roundMatches.forEachIndexed { index, _ ->
                     val startY = currentStartY + (index * currentSpacing)
 
@@ -140,13 +130,12 @@ fun DrawConnections(rounds: Map<Int, List<Match>>) {
                     val nextStartY = (nextSpacing / 2)
                     val targetY = nextStartY + (nextRoundIndex * nextSpacing)
 
-                    // Curva Bezier
                     val path = Path().apply {
                         moveTo(currentX, startY)
                         cubicTo(
-                            currentX + COLUMN_GAP.toPx() / 2, startY, // Punto control 1
-                            currentX + COLUMN_GAP.toPx() / 2, targetY, // Punto control 2
-                            nextX, targetY // Destino
+                            currentX + COLUMN_GAP.toPx() / 2, startY,
+                            currentX + COLUMN_GAP.toPx() / 2, targetY,
+                            nextX, targetY
                         )
                     }
 
@@ -161,15 +150,11 @@ fun DrawConnections(rounds: Map<Int, List<Match>>) {
     }
 }
 
-// ==========================================
-// TARJETA INDIVIDUAL DEL BRACKET
-// ==========================================
 @Composable
 fun BracketMatchCard(match: Match, users: List<User>, onClick: (Match) -> Unit) {
     val p1 = users.find { it.id == match.player1Id }
     val p2 = users.find { it.id == match.player2Id }
 
-    // Color del borde: Dorado si es final, Rojo normal, Gris si no está listo
     val borderColor = if (match.round >= 3) Color(0xFFFFD700) else if (match.winnerId != null) Color.Gray else Color(0xFFD32F2F)
 
     Card(
@@ -180,10 +165,8 @@ fun BracketMatchCard(match: Match, users: List<User>, onClick: (Match) -> Unit) 
         onClick = { onClick(match) }
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // CORREGIDO: Usamos player1Score
             BracketPlayerRow(p1, match.player1Score, match.winnerId == match.player1Id)
 
-            // SEPARADOR + INFO EXTRA (IA / Ronda)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -201,7 +184,6 @@ fun BracketMatchCard(match: Match, users: List<User>, onClick: (Match) -> Unit) 
                 }
             }
 
-            // CORREGIDO: Usamos player2Score
             BracketPlayerRow(p2, match.player2Score, match.winnerId == match.player2Id)
         }
     }
@@ -211,7 +193,6 @@ fun BracketMatchCard(match: Match, users: List<User>, onClick: (Match) -> Unit) 
 fun ColumnScope.BracketPlayerRow(user: User?, score: Int, isWinner: Boolean) {
     val bgColor = if (isWinner) Color(0xFF2E7D32).copy(alpha = 0.3f) else Color.Transparent
 
-    // Obtenemos la imagen del personaje (Main)
     val charImage = remember(user?.characterMain) {
         if (user?.characterMain != null) TekkenData.getCharacterImageUrl(user.characterMain) else null
     }
@@ -224,7 +205,6 @@ fun ColumnScope.BracketPlayerRow(user: User?, score: Int, isWinner: Boolean) {
             .padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // 1. IMAGEN DEL PERSONAJE (Círculo pequeño)
         Box(
             modifier = Modifier
                 .size(24.dp)
@@ -240,7 +220,6 @@ fun ColumnScope.BracketPlayerRow(user: User?, score: Int, isWinner: Boolean) {
 
         Spacer(Modifier.width(8.dp))
 
-        // 2. NOMBRE
         Text(
             text = user?.username ?: "TBD",
             color = if (isWinner) Color(0xFF4CAF50) else Color.White,
@@ -251,7 +230,6 @@ fun ColumnScope.BracketPlayerRow(user: User?, score: Int, isWinner: Boolean) {
             modifier = Modifier.weight(1f)
         )
 
-        // 3. PUNTUACIÓN
         Text(
             text = score.toString(),
             color = if (isWinner) Color(0xFF4CAF50) else Color.White,

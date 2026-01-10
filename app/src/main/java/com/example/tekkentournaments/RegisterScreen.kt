@@ -32,7 +32,7 @@ fun RegisterScreen(
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     val scope = rememberCoroutineScope()
-    val context = LocalContext.current // Contexto para strings en lógica
+    val context = LocalContext.current
 
     Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFF121212)) {
         Column(
@@ -40,7 +40,6 @@ fun RegisterScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // TÍTULO
             Text(
                 text = stringResource(R.string.register_title),
                 fontSize = 28.sp,
@@ -49,7 +48,6 @@ fun RegisterScreen(
             )
             Spacer(modifier = Modifier.height(32.dp))
 
-            // USERNAME
             OutlinedTextField(
                 value = username,
                 onValueChange = { username = it },
@@ -63,7 +61,6 @@ fun RegisterScreen(
             )
             Spacer(modifier = Modifier.height(16.dp))
 
-            // EMAIL
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
@@ -77,7 +74,6 @@ fun RegisterScreen(
             )
             Spacer(modifier = Modifier.height(16.dp))
 
-            // PASSWORD
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -101,7 +97,6 @@ fun RegisterScreen(
             Button(
                 onClick = {
                     if(password.length < 6) {
-                        // Usamos context.getString()
                         errorMessage = context.getString(R.string.error_password_length)
                         return@Button
                     }
@@ -113,7 +108,6 @@ fun RegisterScreen(
                         if (success) {
                             onRegisterSuccess()
                         } else {
-                            // Usamos context.getString()
                             errorMessage = context.getString(R.string.register_error)
                         }
                     }

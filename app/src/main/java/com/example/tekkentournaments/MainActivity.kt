@@ -22,7 +22,6 @@ class MainActivity : ComponentActivity() {
             TekkenTournamentsTheme {
                 var currentScreen by remember { mutableStateOf(AppScreen.Splash) }
 
-                // Variable para guardar el ID del torneo seleccionado
                 var selectedTournamentId by remember { mutableStateOf<String?>(null) }
 
                 when (currentScreen) {
@@ -81,7 +80,6 @@ class MainActivity : ComponentActivity() {
                                 }
                             )
                         } else {
-                            // Si es null por error, volver a lista
                             currentScreen = AppScreen.TournamentsList
                         }
                     }

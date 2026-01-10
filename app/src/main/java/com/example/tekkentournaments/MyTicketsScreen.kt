@@ -25,7 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.stringResource // <--- IMPORTANTE
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -51,13 +51,11 @@ fun MyTicketsScreen(
         isLoading = false
     }
 
-    // --- FONDO TECNOLÓGICO ---
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF0A0A0A))
     ) {
-        // Capa 1: Degradado
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -69,7 +67,6 @@ fun MyTicketsScreen(
                     )
                 )
         )
-        // Capa 2: Grid
         Canvas(modifier = Modifier.fillMaxSize().alpha(0.05f)) {
             val step = 40.dp.toPx()
             for (i in 0 until (size.width / step).toInt()) {
@@ -80,14 +77,12 @@ fun MyTicketsScreen(
             }
         }
 
-        // --- CONTENIDO PRINCIPAL ---
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Cabecera
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
                 IconButton(
                     onClick = onBack,
@@ -116,12 +111,10 @@ fun MyTicketsScreen(
                 }
             } else {
                 if (hasTicket) {
-                    // --- CASO 1: TIENE ENTRADA (Premium) ---
                     TicketDoradoPremium(walletAddress)
 
                     Spacer(Modifier.height(40.dp))
 
-                    // Indicador de estado
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
@@ -140,7 +133,6 @@ fun MyTicketsScreen(
 
                     Spacer(Modifier.weight(1f))
 
-                    // Botones de Acción
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         ActionButton(Icons.Default.Share, stringResource(R.string.btn_share), Color(0xFF333333), Modifier.weight(1f)) {}
                         ActionButton(Icons.Default.Sell, stringResource(R.string.btn_sell_soon), Color(0xFF553311), Modifier.weight(1f)) {}
@@ -148,7 +140,6 @@ fun MyTicketsScreen(
                     Spacer(Modifier.height(20.dp))
 
                 } else {
-                    // --- CASO 2: NO TIENE ENTRADA (Slot Vacío) ---
                     EmptyTicketSlot()
 
                     Spacer(Modifier.weight(1f))
@@ -168,7 +159,7 @@ fun MyTicketsScreen(
                         Icon(Icons.Default.Refresh, null, tint = Color.Black)
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            text = stringResource(R.string.btn_update_wallet), // "ACTUALIZAR WALLET"
+                            text = stringResource(R.string.btn_update_wallet),
                             color = Color.Black,
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp
@@ -180,10 +171,6 @@ fun MyTicketsScreen(
         }
     }
 }
-
-// ==========================================
-// COMPONENTES VISUALES PREMIUM
-// ==========================================
 
 @Composable
 fun TicketDoradoPremium(owner: String) {
@@ -205,7 +192,6 @@ fun TicketDoradoPremium(owner: String) {
         Box(
             modifier = Modifier.fillMaxSize()
         ) {
-            // 1. Fondo Metálico
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -224,20 +210,17 @@ fun TicketDoradoPremium(owner: String) {
                     )
             )
 
-            // 2. Patrón
             Canvas(modifier = Modifier.fillMaxSize().alpha(0.1f)) {
                 drawCircle(Color.Black, center = center, radius = size.minDimension / 3, style = Stroke(width = 20f))
                 drawLine(Color.Black, start = Offset(0f, 0f), end = Offset(size.width, size.height), strokeWidth = 5f)
             }
 
-            // 3. Contenido
             Column(
                 modifier = Modifier
                     .padding(24.dp)
                     .fillMaxSize(),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
-                // Cabecera Ticket
                 Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                     Column {
                         Text(
@@ -255,7 +238,6 @@ fun TicketDoradoPremium(owner: String) {
                             letterSpacing = 1.sp
                         )
                     }
-                    // Sello VIP
                     Box(
                         modifier = Modifier
                             .border(2.dp, Color.Black, RoundedCornerShape(50))
@@ -270,7 +252,6 @@ fun TicketDoradoPremium(owner: String) {
                     }
                 }
 
-                // Icono Central
                 Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Rounded.SportsMma,
@@ -280,7 +261,6 @@ fun TicketDoradoPremium(owner: String) {
                     )
                 }
 
-                // Pie de página
                 Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                     Column {
                         Text(
@@ -339,7 +319,7 @@ fun EmptyTicketSlot() {
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                text = stringResource(R.string.empty_slot_desc), // Descripción larga
+                text = stringResource(R.string.empty_slot_desc),
                 color = Color.DarkGray,
                 fontSize = 12.sp,
                 textAlign = TextAlign.Center

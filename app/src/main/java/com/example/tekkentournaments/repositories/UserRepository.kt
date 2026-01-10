@@ -39,7 +39,6 @@ object UserRepository {
         }
     }
 
-    // Actualiza solo Bio y Status (versión simple)
     suspend fun actualizarPerfil(userId: String, nuevoBio: String, nuevoStatus: String) {
         try {
             supabase.from("users").update(
@@ -58,7 +57,6 @@ object UserRepository {
         }
     }
 
-    // Actualiza TODO el perfil (Bio, Status, Main, Foto y Banner)
     suspend fun actualizarPerfilCompleto(
         userId: String,
         nuevoUsername: String,
@@ -100,11 +98,6 @@ object UserRepository {
             e.printStackTrace()
         }
     }
-
-    // --- FUNCIONES DE STORAGE (IMÁGENES) ---
-
-    // 1. Subir Avatar (Foto de perfil redonda)
-    // Se guardará como "profile_IDUSUARIO.jpg" para sobrescribir la anterior
     suspend fun subirAvatar(userId: String, byteArray: ByteArray): String {
         val bucket = supabase.storage.from("avatars")
         val fileName = "profile_$userId.jpg"
@@ -112,8 +105,6 @@ object UserRepository {
         return bucket.publicUrl(fileName)
     }
 
-    // 2. Subir Banner (Fondo rectangular)
-    // Se guardará como "banner_IDUSUARIO.jpg"
     suspend fun subirBanner(userId: String, byteArray: ByteArray): String {
         val bucket = supabase.storage.from("avatars")
         val fileName = "banner_$userId.jpg"

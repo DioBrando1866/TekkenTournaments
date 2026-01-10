@@ -1,10 +1,10 @@
 package com.example.tekkentournaments.model
 
 enum class MatchType(val label: String, val totalGames: Int, val isFirstTo: Boolean) {
-    BO3("Best of 3", 3, false),    // Gana con 2
-    BO5("Best of 5", 5, false),    // Gana con 3
-    FT5("First to 5", 5, true),    // Gana con 5
-    FT10("First to 10", 10, true); // Gana con 10
+    BO3("Best of 3", 3, false),
+    BO5("Best of 5", 5, false),
+    FT5("First to 5", 5, true),
+    FT10("First to 10", 10, true);
 
     val winsNeeded: Int
         get() = if (isFirstTo) totalGames else (totalGames / 2) + 1

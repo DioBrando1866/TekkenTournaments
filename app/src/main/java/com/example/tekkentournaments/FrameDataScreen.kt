@@ -39,7 +39,6 @@ import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
 
-// --- MODELOS ---
 data class TekkenDocsResponse(
     @SerializedName("characterName") val character: String? = null,
     @SerializedName("framesNormal") val moves: List<TekkenMove>? = null
@@ -54,7 +53,6 @@ data class TekkenMove(
     val tags: Map<String, String>? = null
 )
 
-// --- API ---
 interface TekkenApiService {
     @GET("api/t8/{characterName}/framedata")
     suspend fun getCharacterFrameData(@Path("characterName") name: String): TekkenDocsResponse
@@ -79,22 +77,20 @@ object RetrofitClient {
     }
 }
 
-// --- VISUALIZACIÓN ---
 
 enum class ControlMode { TEXT, PS, XB }
 
 @Composable
 fun VisualCommand(command: String, mode: ControlMode, useArrows: Boolean) {
-    // Definición de colores oficiales corregidos
-    val colorPS_Square = Color(0xFFF48FB1) // Rosa
-    val colorPS_Triangle = Color(0xFF4CAF50) // Verde
-    val colorPS_X = Color(0xFF2196F3) // Azul
-    val colorPS_Circle = Color(0xFFF44336) // Rojo
+    val colorPS_Square = Color(0xFFF48FB1)
+    val colorPS_Triangle = Color(0xFF4CAF50)
+    val colorPS_X = Color(0xFF2196F3)
+    val colorPS_Circle = Color(0xFFF44336)
 
-    val colorXB_X = Color(0xFF2196F3) // Azul
-    val colorXB_Y = Color(0xFFFBC02D) // Amarillo
-    val colorXB_A = Color(0xFF4CAF50) // Verde
-    val colorXB_B = Color(0xFFF44336) // Rojo
+    val colorXB_X = Color(0xFF2196F3)
+    val colorXB_Y = Color(0xFFFBC02D)
+    val colorXB_A = Color(0xFF4CAF50)
+    val colorXB_B = Color(0xFFF44336)
 
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 4.dp)) {
         val parts = command.split("(?<=[+,])|(?=[+,])".toRegex())
@@ -150,12 +146,11 @@ fun ArrowIcon(degrees: Float) {
 
 @Composable
 fun ButtonCircle(symbol: String, color: Color) {
-    // Diseño imitando un botón real: Fondo negro, símbolo y borde de color
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
             .padding(horizontal = 3.dp)
-            .size(24.dp) // Un poco más grande para el borde
+            .size(24.dp)
             .background(Color.Black, CircleShape)
             .border(1.5.dp, color, CircleShape)
     ) {
@@ -168,8 +163,6 @@ fun ButtonCircle(symbol: String, color: Color) {
         )
     }
 }
-
-// --- UI ---
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

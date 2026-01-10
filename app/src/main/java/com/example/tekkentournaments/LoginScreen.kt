@@ -12,8 +12,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext // Necesario para el contexto
-import androidx.compose.ui.res.stringResource // Importante
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -34,11 +34,11 @@ fun LoginScreen(
     var passwordVisible by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
-    val context = LocalContext.current // Obtenemos el contexto para los strings dentro de la lógica
+    val context = LocalContext.current
 
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = Color(0xFF121212) // Fondo Oscuro
+        color = Color(0xFF121212)
     ) {
         Column(
             modifier = Modifier
@@ -47,12 +47,11 @@ fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // LOGO o TÍTULO
             Text(
                 text = stringResource(R.string.login_title),
                 fontSize = 40.sp,
                 fontWeight = FontWeight.Black,
-                color = Color(0xFFD32F2F), // Rojo
+                color = Color(0xFFD32F2F),
                 letterSpacing = 4.sp
             )
             Text(
@@ -64,7 +63,6 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(48.dp))
 
-            // CAMPOS DE TEXTO
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
@@ -123,7 +121,6 @@ fun LoginScreen(
                         if (success) {
                             onLoginSuccess()
                         } else {
-                            // Usamos context.getString() porque estamos dentro de una corrutina
                             errorMessage = context.getString(R.string.login_error)
                         }
                     }

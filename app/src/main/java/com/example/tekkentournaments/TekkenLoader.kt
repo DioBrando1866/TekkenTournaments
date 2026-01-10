@@ -27,12 +27,10 @@ import kotlinx.coroutines.delay
 @Composable
 fun TekkenLoader(
     modifier: Modifier = Modifier,
-    color: Color = Color(0xFFD32F2F) // Rojo Tekken por defecto
+    color: Color = Color(0xFFD32F2F)
 ) {
-    // --- ANIMACIONES ---
     val infiniteTransition = rememberInfiniteTransition(label = "loader_transitions")
 
-    // 1. Rotación del anillo (Rápida y agresiva)
     val angle by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
@@ -42,7 +40,6 @@ fun TekkenLoader(
         label = "rotation"
     )
 
-    // 2. Latido del Puño (Pulse)
     val scale by infiniteTransition.animateFloat(
         initialValue = 0.8f,
         targetValue = 1.2f,
@@ -53,7 +50,6 @@ fun TekkenLoader(
         label = "pulse"
     )
 
-    // --- MENSAJES ALEATORIOS ---
     val messages = listOf(
         "CONNECTING TO ZAIBATSU...",
         "SYNCING FIGHT DATA...",
@@ -63,7 +59,6 @@ fun TekkenLoader(
     )
     var currentMessageIndex by remember { mutableStateOf(0) }
 
-    // Cambiar mensaje cada 1.5 segundos
     LaunchedEffect(Unit) {
         while (true) {
             delay(1500)
@@ -71,7 +66,6 @@ fun TekkenLoader(
         }
     }
 
-    // --- UI ---
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -81,7 +75,6 @@ fun TekkenLoader(
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
 
             Box(contentAlignment = Alignment.Center) {
-                // CAPA 1: Anillo de Energía
                 Canvas(modifier = Modifier.size(100.dp)) {
                     rotate(angle) {
                         drawArc(
@@ -96,7 +89,6 @@ fun TekkenLoader(
                     }
                 }
 
-                // CAPA 2: Puño Central Palpitante
                 Icon(
                     imageVector = Icons.Rounded.SportsMma,
                     contentDescription = null,
@@ -109,7 +101,6 @@ fun TekkenLoader(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // CAPA 3: Texto Parpadeante
             Text(
                 text = messages[currentMessageIndex],
                 color = Color.White,
@@ -119,7 +110,6 @@ fun TekkenLoader(
                 style = MaterialTheme.typography.labelLarge
             )
 
-            // Barra de progreso decorativa
             Spacer(modifier = Modifier.height(12.dp))
             LinearProgressIndicator(
                 color = color,

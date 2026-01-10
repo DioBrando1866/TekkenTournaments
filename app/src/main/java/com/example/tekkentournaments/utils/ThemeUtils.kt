@@ -3,17 +3,16 @@ package com.example.tekkentournaments.utils
 import androidx.compose.ui.graphics.Color
 
 data class CharacterColors(
-    val primary: Color,     // Color principal (Botones, Iconos)
-    val secondary: Color,   // Color secundario (Bordes, detalles)
-    val background: Color,  // Fondo (opcional, si quieres cambiar el negro puro)
-    val name: String        // Nombre del tema (para debug)
+    val primary: Color,
+    val secondary: Color,
+    val background: Color,
+    val name: String
 )
 
 object ThemeUtils {
 
-    // Color por defecto (Tekken Rojo)
     val DefaultTheme = CharacterColors(
-        primary = Color(0xFFD32F2F), // Rojo Tekken
+        primary = Color(0xFFD32F2F),
         secondary = Color(0xFFE53935),
         background = Color(0xFF121212),
         name = "Mishima Red"
@@ -25,18 +24,15 @@ object ThemeUtils {
         val key = charName.lowercase().replace(" ", "")
 
         return when {
-            // KAZUYA / REINA (Morado Eléctrico)
             key.contains("kazuya") || key.contains("reina") || key.contains("devil") -> CharacterColors(
-                primary = Color(0xFF9C27B0), // Morado
-                secondary = Color(0xFFE040FB), // Neon Purple
-                background = Color(0xFF1A0520), // Fondo morado muy oscuro
+                primary = Color(0xFF9C27B0),
+                secondary = Color(0xFFE040FB),
+                background = Color(0xFF1A0520),
                 name = "Devil Gene"
             )
 
-            // JIN / LARS (Rojo/Negro/Blanco - Estilo Clásico)
             key.contains("jin") || key.contains("lars") -> DefaultTheme
 
-            // KING / EDDY (Dorado/Amarillo - Lucha Libre/Capoeira)
             key.contains("king") || key.contains("eddy") -> CharacterColors(
                 primary = Color(0xFFFFD700), // Oro
                 secondary = Color(0xFFFFEA00), // Amarillo brillante
@@ -44,27 +40,24 @@ object ThemeUtils {
                 name = "Jaguar Gold"
             )
 
-            // BRYAN / DRAGUNOV (Azul/Verde Militar)
             key.contains("bryan") || key.contains("dragunov") || key.contains("jack") -> CharacterColors(
-                primary = Color(0xFF2E7D32), // Verde Militar
-                secondary = Color(0xFF00E676), // Verde Neon
-                background = Color(0xFF051405), // Fondo verdoso
+                primary = Color(0xFF2E7D32),
+                secondary = Color(0xFF00E676),
+                background = Color(0xFF051405),
                 name = "War Zone"
             )
 
-            // LILI / ASUKA / ALISA / XIAOYU (Rosa/Pastel)
             key.contains("lili") || key.contains("asuka") || key.contains("alisa") || key.contains("xiaoyu") -> CharacterColors(
-                primary = Color(0xFFE91E63), // Rosa
-                secondary = Color(0xFFFF4081), // Rosa Neon
-                background = Color(0xFF1F0A10), // Fondo rosado oscuro
+                primary = Color(0xFFE91E63),
+                secondary = Color(0xFFFF4081),
+                background = Color(0xFF1F0A10),
                 name = "Pop Star"
             )
 
-            // CLAUDIO / LEE (Azul Elegante)
             key.contains("claudio") || key.contains("lee") || key.contains("steve") -> CharacterColors(
-                primary = Color(0xFF2962FF), // Azul Royal
-                secondary = Color(0xFF448AFF), // Azul Claro
-                background = Color(0xFF050A19), // Fondo azulado
+                primary = Color(0xFF2962FF),
+                secondary = Color(0xFF448AFF),
+                background = Color(0xFF050A19),
                 name = "Excellént"
             )
 

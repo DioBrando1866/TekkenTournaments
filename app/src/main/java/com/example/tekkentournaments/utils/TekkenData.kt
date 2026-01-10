@@ -2,7 +2,6 @@ package com.example.tekkentournaments.utils
 
 object TekkenData {
 
-    // Lista de juegos soportados
     val gameVersions = listOf(
         "Tekken 8",
         "Tekken 7",

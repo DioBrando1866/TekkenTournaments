@@ -33,10 +33,8 @@ import com.example.tekkentournaments.utils.TekkenRankUtils
 @Composable
 fun TekkenCard(
     user: User,
-    theme: CharacterColors // El tema del personaje "Main" para la etiqueta pequeña
+    theme: CharacterColors
 ) {
-    // --- CÁLCULOS DE RANGO ---
-    // Usamos 'remember' para no recalcular si no cambian las victorias
     val rank = remember(user.wins) { TekkenRankUtils.getRankFromWins(user.wins) }
     val nextRank = remember(user.wins) { TekkenRankUtils.getNextRank(user.wins) }
     val progress = remember(user.wins) { TekkenRankUtils.getProgressToNextRank(user.wins) }
@@ -44,16 +42,14 @@ fun TekkenCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(240.dp), // Altura suficiente para banner y datos
+            .height(240.dp),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(0.dp),
-        border = BorderStroke(1.dp, Color(0xFF333333)) // Borde sutil oscuro
+        border = BorderStroke(1.dp, Color(0xFF333333))
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // 1. FONDO BASE NEGRO
             Box(modifier = Modifier.fillMaxSize().background(Color(0xFF121212)))
 
-            // 2. IMAGEN DE BANNER PERSONALIZADO
             if (user.bannerImage != null) {
                 AsyncImage(
                     model = user.bannerImage,
@@ -62,19 +58,18 @@ fun TekkenCard(
                     alignment = Alignment.Center,
                     modifier = Modifier
                         .fillMaxSize()
-                        .alpha(0.6f) // Transparencia para que no compita con el texto
+                        .alpha(0.6f)
                 )
             }
 
-            // 3. DEGRADADO OSCURO (Esencial para leer el texto)
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color.Black.copy(alpha = 0.3f), // Arriba un poco oscuro
-                                Color.Black.copy(alpha = 0.95f) // Abajo casi negro sólido
+                                Color.Black.copy(alpha = 0.3f),
+                                Color.Black.copy(alpha = 0.95f)
                             ),
                             startY = 0f,
                             endY = 700f
@@ -82,18 +77,15 @@ fun TekkenCard(
                     )
             )
 
-            // 4. CONTENIDO DE LA TARJETA
             Row(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(20.dp),
                 verticalAlignment = Alignment.Bottom
             ) {
-                // --- AVATAR DE PERFIL ---
                 Box(
                     modifier = Modifier
                         .size(90.dp)
-                        // El borde del avatar usa el color del RANGO actual
                         .border(3.dp, rank.color, CircleShape)
                         .padding(4.dp)
                         .clip(CircleShape)
@@ -108,9 +100,7 @@ fun TekkenCard(
 
                 Spacer(modifier = Modifier.width(16.dp))
 
-                // --- COLUMNA DE INFORMACIÓN ---
                 Column(modifier = Modifier.weight(1f).padding(bottom = 4.dp)) {
-                    // Nombre de usuario
                     Text(
                         text = user.username.uppercase(),
                         style = MaterialTheme.typography.headlineSmall,
@@ -122,7 +112,6 @@ fun TekkenCard(
 
                     Spacer(Modifier.height(4.dp))
 
-                    // ETIQUETA DEL MAIN (Usa el color del TEMA del personaje)
                     Surface(
                         color = theme.primary.copy(alpha = 0.15f),
                         shape = RoundedCornerShape(4.dp),
@@ -132,7 +121,7 @@ fun TekkenCard(
                             Icon(Icons.Rounded.SportsMma, null, tint = theme.primary, modifier = Modifier.size(12.dp))
                             Spacer(Modifier.width(4.dp))
                             Text(
-                                text = "MAIN: ${user.characterMain?.uppercase() ?: "RANDOM"}", // Asegúrate de tener el string resource o usa texto directo
+                                text = "MAIN: ${user.characterMain?.uppercase() ?: "RANDOM"}",
                                 color = theme.primary,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 10.sp
@@ -142,9 +131,7 @@ fun TekkenCard(
 
                     Spacer(Modifier.height(12.dp))
 
-                    // --- SECCIÓN DE RANGO ---
                     Text("RANK:", color = Color.Gray, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                    // Título del Rango (Color del Rango)
                     Text(
                         text = rank.title,
                         color = rank.color,
@@ -156,7 +143,6 @@ fun TekkenCard(
 
                     Spacer(Modifier.height(6.dp))
 
-                    // Barra de Progreso al siguiente rango
                     if (nextRank != null) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             LinearProgressIndicator(
@@ -170,7 +156,6 @@ fun TekkenCard(
                         }
                         Text("Next: ${nextRank.title}", color = Color.DarkGray, fontSize = 10.sp, modifier = Modifier.padding(top = 2.dp))
                     } else {
-                        // Rango máximo alcanzado
                         Text("MAX RANK ACHIEVED", color = Color(0xFFFF00CC), fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
                 }

@@ -5,7 +5,6 @@ import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.auth.auth
 
-// Imports de tus clases y cliente supabase
 import com.example.tekkentournaments.clases.Tournament
 import com.example.tekkentournaments.clases.Player
 import com.example.tekkentournaments.clases.Match
@@ -14,9 +13,6 @@ import supabase
 
 object TournamentRepository {
 
-    // ==========================================
-    // 1. GESTIÓN DE TORNEOS (CRUD)
-    // ==========================================
 
     suspend fun obtenerTorneos(): List<Tournament> {
         return try {
@@ -63,7 +59,6 @@ object TournamentRepository {
                 creatorName = creatorName,
                 status = "open",
                 isPublic = true
-                // participants eliminado correctamente
             )
 
             supabase.from("tournaments").insert(nuevoTorneo)
@@ -102,10 +97,6 @@ object TournamentRepository {
         }
     }
 
-    // ==========================================
-    // 2. GESTIÓN DE JUGADORES
-    // ==========================================
-
     suspend fun agregarJugador(tournamentId: String, nombre: String, personaje: String): Boolean {
         return try {
             val player = Player(
@@ -132,11 +123,6 @@ object TournamentRepository {
         }
     }
 
-    // ==========================================
-    // 3. GESTIÓN DE MATCHES Y BRACKET
-    // ==========================================
-
-    // ✅ ESTA ES LA FUNCIÓN QUE FALTABA Y QUE SOLUCIONA EL ERROR
     suspend fun generarBracketInicial(tournamentId: String, formato: Int): Boolean {
         return try {
             val players = obtenerJugadores(tournamentId)
@@ -148,7 +134,6 @@ object TournamentRepository {
             val shuffled = players.shuffled()
             val matches = mutableListOf<Match>()
 
-            // Generamos emparejamientos de la Ronda 1
             for (i in shuffled.indices step 2) {
                 if (i + 1 < shuffled.size) {
                     val p1 = shuffled[i]
@@ -163,18 +148,16 @@ object TournamentRepository {
                             winnerId = null,
                             player1Score = 0,
                             player2Score = 0,
-                            maxScore = formato // Se pasa el formato (ej. 3 para BO3)
+                            maxScore = formato
                         )
                     )
                 }
             }
 
-            // Insertamos todos los matches en Supabase
             if (matches.isNotEmpty()) {
                 matches.forEach { supabase.from("matches").insert(it) }
             }
 
-            // Actualizamos estado del torneo a "en_curso"
             supabase.from("tournaments").update({
                 set("status", "en_curso")
             }) {
@@ -211,7 +194,6 @@ object TournamentRepository {
                 filter { eq("id", matchId) }
             }
 
-            // Gamificación: Si hay ganador, sumamos victoria
             if (winnerId != null) {
                 incrementarVictoriaUsuario(winnerId)
             }
@@ -219,24 +201,16 @@ object TournamentRepository {
             Log.e("REPO", "Error actualizarPartido: ${e.message}")
         }
     }
-
-    // ==========================================
-    // 4. GAMIFICACIÓN INTERNA
-    // ==========================================
-
     private suspend fun incrementarVictoriaUsuario(playerId: String) {
         try {
-            // 1. Buscamos al jugador para obtener su nombre real
             val player = supabase.from("players").select {
                 filter { eq("id", playerId) }
             }.decodeSingleOrNull<Player>() ?: return
 
-            // 2. Buscamos si ese nombre corresponde a un usuario registrado
             val user = supabase.from("users").select {
                 filter { eq("username", player.name) }
             }.decodeSingleOrNull<User>()
 
-            // 3. Si existe, le sumamos +1 Win
             if (user != null) {
                 supabase.from("users").update({
                     set("wins", user.wins + 1)

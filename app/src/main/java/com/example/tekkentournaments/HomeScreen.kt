@@ -22,7 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource // <--- IMPORTANTE
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -75,7 +75,6 @@ fun HomeScreen(
                 .verticalScroll(rememberScrollState())
         ) {
 
-            // --- 1. CABECERA: PLAYER ID CARD ---
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -137,7 +136,6 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // --- 2. EVENTO DESTACADO ---
             PaddingBox(title = stringResource(R.string.next_tournament_title)) {
                 if (featuredTournament != null) {
                     FeaturedTournamentCard(featuredTournament!!)
@@ -152,7 +150,6 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // --- 3. ACCIONES RÁPIDAS ---
             PaddingBox(title = stringResource(R.string.quick_actions)) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     MenuButton(
@@ -161,7 +158,6 @@ fun HomeScreen(
                         onClick = onNavigateToList
                     )
 
-                    // --- NUEVO BOTÓN DE FRAME DATA ---
                     MenuButton(
                         text = "Frame Data",
                         icon = Icons.Default.QueryStats,
@@ -181,7 +177,6 @@ fun HomeScreen(
     }
 }
 
-// --- COMPONENTES AUXILIARES ---
 
 @Composable
 fun PaddingBox(title: String, content: @Composable () -> Unit) {
