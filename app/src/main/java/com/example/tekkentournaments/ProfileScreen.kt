@@ -387,7 +387,20 @@ fun EditProfileDialog(
 }
 
 fun playExcellentSound(context: Context) {
-    val mp = MediaPlayer.create(context, R.raw.excellent)
-    mp.setOnCompletionListener { it.release() }
-    mp.start()
+    try {
+        val mp = MediaPlayer.create(context, R.raw.excellent)
+
+        // Ajustamos el volumen al máximo relativo del reproductor (1.0f, 1.0f)
+        // Esto asegura que el archivo se reproduzca al 100% de su ganancia original
+        mp.setVolume(1.0f, 1.0f)
+
+        mp.setOnCompletionListener {
+            it.stop()
+            it.release()
+        }
+
+        mp.start()
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
 }
