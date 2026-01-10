@@ -90,7 +90,7 @@ fun MyTicketsScreen(
                 ) { Icon(Icons.Default.ArrowBack, null, tint = Color.White) }
                 Spacer(Modifier.width(16.dp))
                 Text(
-                    text = stringResource(R.string.tickets_title), // "NFT ASSETS & TICKETS"
+                    text = stringResource(R.string.tickets_title),
                     color = Color.White,
                     fontWeight = FontWeight.Black,
                     fontSize = 22.sp,
@@ -224,14 +224,14 @@ fun TicketDoradoPremium(owner: String) {
                 Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                     Column {
                         Text(
-                            text = stringResource(R.string.ticket_hub_name), // "TEKKEN HUB"
+                            text = stringResource(R.string.ticket_hub_name),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.Black.copy(alpha = 0.7f),
                             letterSpacing = 2.sp
                         )
                         Text(
-                            text = stringResource(R.string.event_iron_fist), // "IRON FIST 2025"
+                            text = stringResource(R.string.event_iron_fist),
                             fontWeight = FontWeight.Black,
                             fontSize = 28.sp,
                             color = Color(0xFF3E2723),
@@ -311,7 +311,7 @@ fun EmptyTicketSlot() {
             )
             Spacer(Modifier.height(20.dp))
             Text(
-                text = stringResource(R.string.empty_slot), // "SLOT VACÍO"
+                text = stringResource(R.string.empty_slot),
                 color = Color.Gray,
                 fontWeight = FontWeight.Black,
                 fontSize = 20.sp,
